@@ -68,6 +68,14 @@ public:
 		}
 		return false;
 	}
+
+	// TODO FFMPEG: Temporarely added
+	_ALWAYS_INLINE_ int get() const {
+		std::lock_guard<decltype(mutex_)> lock(mutex_);
+		return count_;
+	}
+
+
 };
 
 #else
@@ -77,6 +85,9 @@ public:
 	_ALWAYS_INLINE_ void post() const {}
 	_ALWAYS_INLINE_ void wait() const {}
 	_ALWAYS_INLINE_ bool try_wait() const { return true; }
+
+	// TODO FFMPEG: Temporarely added
+	_ALWAYS_INLINE_ int get() const { return 1; }
 };
 
 #endif
