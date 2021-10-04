@@ -49,6 +49,7 @@
 				[/codeblocks]
 				See [method execute] if you wish to run an external command and retrieve the results.
 				[b]Note:[/b] This method is implemented on Android, iOS, Linux, macOS and Windows.
+				[b]Note:[/b] On macOS, sandboxed applications are limited to run only embedded helper executables, specified during export.
 			</description>
 		</method>
 		<method name="delay_msec" qualifiers="const">
@@ -119,6 +120,7 @@
 				[/csharp]
 				[/codeblocks]
 				[b]Note:[/b] This method is implemented on Android, iOS, Linux, macOS and Windows.
+				[b]Note:[/b] On macOS, sandboxed applications are limited to run only embedded helper executables, specified during export.
 			</description>
 		</method>
 		<method name="find_keycode_from_string" qualifiers="const">
@@ -244,7 +246,7 @@
 		<method name="get_name" qualifiers="const">
 			<return type="String" />
 			<description>
-				Returns the name of the host OS. Possible values are: [code]"Android"[/code], [code]"iOS"[/code], [code]"HTML5"[/code], [code]"OSX"[/code], [code]"Server"[/code], [code]"Windows"[/code], [code]"UWP"[/code], [code]"X11"[/code].
+				Returns the name of the host OS. Possible values are: [code]"Android"[/code], [code]"iOS"[/code], [code]"HTML5"[/code], [code]"macOS"[/code], [code]"Server"[/code], [code]"Windows"[/code], [code]"UWP"[/code], [code]"X11"[/code].
 			</description>
 		</method>
 		<method name="get_process_id" qualifiers="const">
@@ -342,7 +344,7 @@
 		<method name="is_stdout_verbose" qualifiers="const">
 			<return type="bool" />
 			<description>
-				Returns [code]true[/code] if the engine was executed with [code]-v[/code] (verbose stdout).
+				Returns [code]true[/code] if the engine was executed with the [code]--verbose[/code] or [code]-v[/code] command line argument, or if [member ProjectSettings.debug/settings/stdout/verbose_stdout] is [code]true[/code]. See also [method @GlobalScope.print_verbose].
 			</description>
 		</method>
 		<method name="is_userfs_persistent" qualifiers="const">

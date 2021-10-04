@@ -108,7 +108,7 @@
 			<return type="String" />
 			<argument index="0" name="tab_idx" type="int" />
 			<description>
-				Returns the title of the tab at index [code]tab_idx[/code]. Tab titles default to the name of the indexed child node, but this can be overridden with [method set_tab_title].
+				Returns the title of the tab at index [code]tab_idx[/code].
 			</description>
 		</method>
 		<method name="get_tabs_rearrange_group" qualifiers="const">
@@ -144,8 +144,7 @@
 			<argument index="0" name="tab_idx" type="int" />
 			<argument index="1" name="disabled" type="bool" />
 			<description>
-				If [code]disabled[/code] is [code]false[/code], hides the tab at index [code]tab_idx[/code].
-				[b]Note:[/b] Its title text will remain unless it is also removed with [method set_tab_title].
+				If [code]disabled[/code] is [code]true[/code], disables the tab at index [code]tab_idx[/code], making it non-interactable.
 			</description>
 		</method>
 		<method name="set_tab_icon">
@@ -193,7 +192,7 @@
 			<return type="void" />
 			<argument index="0" name="group_id" type="int" />
 			<description>
-				Defines the rearrange group ID. Choose for each [Tabs] the same value to dragging tabs between [Tabs]. Enable drag with [code]set_drag_to_rearrange_enabled(true)[/code].
+				Defines the rearrange group ID. Choose for each [Tabs] the same value to dragging tabs between [Tabs]. Enable drag with [member drag_to_rearrange_enabled].
 			</description>
 		</method>
 	</methods>
@@ -218,16 +217,10 @@
 		</member>
 	</members>
 	<signals>
-		<signal name="reposition_active_tab_request">
+		<signal name="active_tab_rearranged">
 			<argument index="0" name="idx_to" type="int" />
 			<description>
 				Emitted when the active tab is rearranged via mouse drag. See [member drag_to_rearrange_enabled].
-			</description>
-		</signal>
-		<signal name="right_button_pressed">
-			<argument index="0" name="tab" type="int" />
-			<description>
-				Emitted when a tab is right-clicked.
 			</description>
 		</signal>
 		<signal name="tab_changed">
@@ -252,6 +245,12 @@
 			<argument index="0" name="tab" type="int" />
 			<description>
 				Emitted when a tab is hovered by the mouse.
+			</description>
+		</signal>
+		<signal name="tab_rmb_clicked">
+			<argument index="0" name="tab" type="int" />
+			<description>
+				Emitted when a tab is right-clicked.
 			</description>
 		</signal>
 	</signals>
@@ -282,14 +281,14 @@
 		</constant>
 	</constants>
 	<theme_items>
-		<theme_item name="button" data_type="style" type="StyleBox">
-			Background of the close button when it's being hovered with the cursor.
-		</theme_item>
-		<theme_item name="button_pressed" data_type="style" type="StyleBox">
-			Background of the close button when it's being pressed.
-		</theme_item>
 		<theme_item name="close" data_type="icon" type="Texture2D">
 			The icon for the close button (see [member tab_close_display_policy]).
+		</theme_item>
+		<theme_item name="close_bg_highlight" data_type="style" type="StyleBox">
+			Background of the close button when it's being hovered with the cursor.
+		</theme_item>
+		<theme_item name="close_bg_pressed" data_type="style" type="StyleBox">
+			Background of the close button when it's being pressed.
 		</theme_item>
 		<theme_item name="decrement" data_type="icon" type="Texture2D">
 			Icon for the left arrow button that appears when there are too many tabs to fit in the container width. When the button is disabled (i.e. the first tab is visible), it appears semi-transparent.
@@ -316,7 +315,7 @@
 			Font color of the other, unselected tabs.
 		</theme_item>
 		<theme_item name="hseparation" data_type="constant" type="int" default="4">
-			The horizontal separation between the tabs.
+			The horizontal separation between the elements inside tabs.
 		</theme_item>
 		<theme_item name="increment" data_type="icon" type="Texture2D">
 			Icon for the right arrow button that appears when there are too many tabs to fit in the container width. When the button is disabled (i.e. the last tab is visible) it appears semi-transparent.

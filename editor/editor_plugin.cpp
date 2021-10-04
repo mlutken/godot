@@ -104,7 +104,7 @@ Vector<Ref<Texture2D>> EditorInterface::make_mesh_previews(const Vector<Ref<Mesh
 		RS::get_singleton()->instance_set_transform(inst, mesh_xform);
 
 		AABB aabb = mesh->get_aabb();
-		Vector3 ofs = aabb.position + aabb.size * 0.5;
+		Vector3 ofs = aabb.get_center();
 		aabb.position -= ofs;
 		Transform3D xform;
 		xform.basis = Basis().rotated(Vector3(0, 1, 0), -Math_PI / 6);
@@ -219,7 +219,7 @@ Array EditorInterface::get_open_scenes() const {
 		if (scenes[idx_scn].root == nullptr) {
 			continue;
 		}
-		ret.push_back(scenes[idx_scn].root->get_filename());
+		ret.push_back(scenes[idx_scn].root->get_scene_file_path());
 	}
 	return ret;
 }
@@ -291,11 +291,11 @@ Error EditorInterface::save_scene() {
 	if (!get_edited_scene_root()) {
 		return ERR_CANT_CREATE;
 	}
-	if (get_edited_scene_root()->get_filename() == String()) {
+	if (get_edited_scene_root()->get_scene_file_path() == String()) {
 		return ERR_CANT_CREATE;
 	}
 
-	save_scene_as(get_edited_scene_root()->get_filename());
+	save_scene_as(get_edited_scene_root()->get_scene_file_path());
 	return OK;
 }
 

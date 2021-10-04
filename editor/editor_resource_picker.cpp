@@ -145,7 +145,7 @@ void EditorResourcePicker::_update_menu() {
 	Rect2 gt = edit_button->get_screen_rect();
 	edit_menu->set_as_minsize();
 	int ms = edit_menu->get_contents_minimum_size().width;
-	Vector2 popup_pos = gt.position + gt.size - Vector2(ms, 0);
+	Vector2 popup_pos = gt.get_end() - Vector2(ms, 0);
 	edit_menu->set_position(popup_pos);
 	edit_menu->popup();
 }
@@ -924,7 +924,7 @@ void EditorShaderPicker::set_create_options(Object *p_menu_node) {
 		return;
 	}
 
-	menu_node->add_icon_item(get_theme_icon("Shader", "EditorIcons"), TTR("New Shader"), OBJ_MENU_NEW_SHADER);
+	menu_node->add_icon_item(get_theme_icon(SNAME("Shader"), SNAME("EditorIcons")), TTR("New Shader"), OBJ_MENU_NEW_SHADER);
 	menu_node->add_separator();
 }
 

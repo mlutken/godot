@@ -123,9 +123,9 @@ void VisualShaderGraphPlugin::set_connections(List<VisualShader::Connection> &p_
 
 void VisualShaderGraphPlugin::show_port_preview(VisualShader::Type p_type, int p_node_id, int p_port_id) {
 	if (visual_shader->get_shader_type() == p_type && links.has(p_node_id) && links[p_node_id].output_ports.has(p_port_id)) {
-		for (Map<int, Port>::Element *E = links[p_node_id].output_ports.front(); E; E = E->next()) {
-			if (E->value().preview_button != nullptr) {
-				E->value().preview_button->set_pressed(false);
+		for (const KeyValue<int, Port> &E : links[p_node_id].output_ports) {
+			if (E.value.preview_button != nullptr) {
+				E.value.preview_button->set_pressed(false);
 			}
 		}
 
@@ -264,11 +264,11 @@ void VisualShaderGraphPlugin::register_curve_editor(int p_node_id, int p_index, 
 }
 
 void VisualShaderGraphPlugin::update_uniform_refs() {
-	for (Map<int, Link>::Element *E = links.front(); E; E = E->next()) {
-		VisualShaderNodeUniformRef *ref = Object::cast_to<VisualShaderNodeUniformRef>(E->get().visual_node);
+	for (KeyValue<int, Link> &E : links) {
+		VisualShaderNodeUniformRef *ref = Object::cast_to<VisualShaderNodeUniformRef>(E.value.visual_node);
 		if (ref) {
-			remove_node(E->get().type, E->key());
-			add_node(E->get().type, E->key());
+			remove_node(E.value.type, E.key);
+			add_node(E.value.type, E.key);
 		}
 	}
 }
@@ -1945,7 +1945,7 @@ void VisualShaderEditor::_set_node_size(int p_type, int p_node, const Vector2 &p
 			box_size.x -= 28 * EDSCALE;
 			box_size.y -= text_box->get_offset(SIDE_TOP);
 			box_size.y -= 28 * EDSCALE;
-			text_box->set_custom_minimum_size(Size2(box_size.x, box_size.y));
+			text_box->set_custom_minimum_size(box_size);
 			text_box->set_size(Size2(1, 1));
 		}
 	}

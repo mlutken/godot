@@ -79,12 +79,27 @@ if env["builtin_embree"]:
             env.Append(LIBS=["psapi"])
 
     env_thirdparty = env_raycast.Clone()
+    env_thirdparty.force_optimization_on_debug()
     env_thirdparty.disable_warnings()
     env_thirdparty.add_source_files(thirdparty_obj, thirdparty_sources)
 
     if not env["arch"] in ["x86", "x86_64"] or env.msvc:
         # Embree needs those, it will automatically use SSE2NEON in ARM
         env_thirdparty.Append(CPPDEFINES=["__SSE2__", "__SSE__"])
+
+    if not env.msvc:
+        env_thirdparty.Append(
+            CPPFLAGS=[
+                "-fno-strict-overflow",
+                "-fno-delete-null-pointer-checks",
+                "-fwrapv",
+                "-fsigned-char",
+                "-fno-strict-aliasing",
+                "-fno-tree-vectorize",
+                "-fvisibility=hidden",
+                "-fvisibility-inlines-hidden",
+            ]
+        )
 
     env.modules_sources += thirdparty_obj
 

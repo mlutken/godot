@@ -32,11 +32,6 @@
 
 #include "core/config/engine.h"
 #include "core/version.h"
-
-#ifdef TOOLS_ENABLED
-#include "editor/editor_settings.h"
-#endif
-
 #include "scene/main/scene_tree.h"
 #include "scene/scene_string_names.h"
 
@@ -78,6 +73,9 @@ RID Material::get_rid() const {
 
 void Material::_validate_property(PropertyInfo &property) const {
 	if (!_can_do_next_pass() && property.name == "next_pass") {
+		property.usage = PROPERTY_USAGE_NONE;
+	}
+	if (!_can_use_render_priority() && property.name == "render_priority") {
 		property.usage = PROPERTY_USAGE_NONE;
 	}
 }
@@ -268,19 +266,13 @@ void ShaderMaterial::_bind_methods() {
 }
 
 void ShaderMaterial::get_argument_options(const StringName &p_function, int p_idx, List<String> *r_options) const {
-#ifdef TOOLS_ENABLED
-	const String quote_style = EDITOR_GET("text_editor/completion/use_single_quotes") ? "'" : "\"";
-#else
-	const String quote_style = "\"";
-#endif
-
 	String f = p_function.operator String();
 	if ((f == "get_shader_param" || f == "set_shader_param") && p_idx == 0) {
 		if (shader.is_valid()) {
 			List<PropertyInfo> pl;
 			shader->get_param_list(&pl);
 			for (const PropertyInfo &E : pl) {
-				r_options->push_back(E.name.replace_first("shader_param/", "").quote(quote_style));
+				r_options->push_back(E.name.replace_first("shader_param/", "").quote());
 			}
 		}
 	}
@@ -288,6 +280,10 @@ void ShaderMaterial::get_argument_options(const StringName &p_function, int p_id
 }
 
 bool ShaderMaterial::_can_do_next_pass() const {
+	return shader.is_valid() && shader->get_mode() == Shader::MODE_SPATIAL;
+}
+
+bool ShaderMaterial::_can_use_render_priority() const {
 	return shader.is_valid() && shader->get_mode() == Shader::MODE_SPATIAL;
 }
 
@@ -1301,7 +1297,7 @@ void BaseMaterial3D::flush_changes() {
 void BaseMaterial3D::_queue_shader_change() {
 	MutexLock lock(material_mutex);
 
-	if (!element.in_list()) {
+	if (is_initialized && !element.in_list()) {
 		dirty_materials->add(&element);
 	}
 }
@@ -2777,6 +2773,7 @@ BaseMaterial3D::BaseMaterial3D(bool p_orm) :
 
 	flags[FLAG_USE_TEXTURE_REPEAT] = true;
 
+	is_initialized = true;
 	_queue_shader_change();
 }
 

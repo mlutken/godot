@@ -110,7 +110,7 @@ TypedArray<String> BoneAttachment3D::get_configuration_warnings() const {
 	} else {
 		Skeleton3D *parent = Object::cast_to<Skeleton3D>(get_parent());
 		if (!parent) {
-			warnings.append(TTR("Parent node is not a Skeleton3D node! Please use an extenral Skeleton3D if you intend to use the BoneAttachment3D without it being a child of a Skeleton3D node."));
+			warnings.append(TTR("Parent node is not a Skeleton3D node! Please use an external Skeleton3D if you intend to use the BoneAttachment3D without it being a child of a Skeleton3D node."));
 		}
 	}
 
@@ -161,7 +161,7 @@ void BoneAttachment3D::_check_bind() {
 			bone_idx = sk->find_bone(bone_name);
 		}
 		if (bone_idx != -1) {
-			sk->call_deferred("connect", "bone_pose_changed", callable_mp(this, &BoneAttachment3D::on_bone_pose_update));
+			sk->call_deferred(SNAME("connect"), "bone_pose_changed", callable_mp(this, &BoneAttachment3D::on_bone_pose_update));
 			bound = true;
 			call_deferred(SNAME("on_bone_pose_update"), bone_idx);
 		}

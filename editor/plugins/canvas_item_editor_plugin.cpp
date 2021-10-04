@@ -387,7 +387,7 @@ Point2 CanvasItemEditor::snap_point(Point2 p_target, unsigned int p_modes, unsig
 		// Self center
 		if ((is_snap_active && snap_node_center && (p_modes & SNAP_NODE_CENTER)) || (p_forced_modes & SNAP_NODE_CENTER)) {
 			if (p_self_canvas_item->_edit_use_rect()) {
-				Point2 center = p_self_canvas_item->get_global_transform_with_canvas().xform(p_self_canvas_item->_edit_get_rect().get_position() + p_self_canvas_item->_edit_get_rect().get_size() / 2.0);
+				Point2 center = p_self_canvas_item->get_global_transform_with_canvas().xform(p_self_canvas_item->_edit_get_rect().get_center());
 				_snap_if_closer_point(p_target, output, snap_target, center, SNAP_TARGET_SELF, rotation);
 			} else {
 				Point2 position = p_self_canvas_item->get_global_transform_with_canvas().xform(Point2());
@@ -525,7 +525,7 @@ Rect2 CanvasItemEditor::_get_encompassing_rect_from_list(List<CanvasItem *> p_li
 
 	// Handles the first element
 	CanvasItem *canvas_item = p_list.front()->get();
-	Rect2 rect = Rect2(canvas_item->get_global_transform_with_canvas().xform(canvas_item->_edit_get_rect().position + canvas_item->_edit_get_rect().size / 2), Size2());
+	Rect2 rect = Rect2(canvas_item->get_global_transform_with_canvas().xform(canvas_item->_edit_get_rect().get_center()), Size2());
 
 	// Expand with the other ones
 	for (CanvasItem *canvas_item2 : p_list) {
@@ -564,7 +564,7 @@ void CanvasItemEditor::_expand_encompassing_rect_using_children(Rect2 &r_rect, c
 		Transform2D xform = p_parent_xform * p_canvas_xform * canvas_item->get_transform();
 		Rect2 rect = canvas_item->_edit_get_rect();
 		if (r_first) {
-			r_rect = Rect2(xform.xform(rect.position + rect.size / 2), Size2());
+			r_rect = Rect2(xform.xform(rect.get_center()), Size2());
 			r_first = false;
 		}
 		r_rect.expand_to(xform.xform(rect.position));
@@ -748,8 +748,8 @@ bool CanvasItemEditor::_select_click_on_item(CanvasItem *item, Point2 p_click_po
 
 List<CanvasItem *> CanvasItemEditor::_get_edited_canvas_items(bool retreive_locked, bool remove_canvas_item_if_parent_in_selection) {
 	List<CanvasItem *> selection;
-	for (Map<Node *, Object *>::Element *E = editor_selection->get_selection().front(); E; E = E->next()) {
-		CanvasItem *canvas_item = Object::cast_to<CanvasItem>(E->key());
+	for (const KeyValue<Node *, Object *> &E : editor_selection->get_selection()) {
+		CanvasItem *canvas_item = Object::cast_to<CanvasItem>(E.key);
 		if (canvas_item && canvas_item->is_visible_in_tree() && canvas_item->get_viewport() == EditorNode::get_singleton()->get_scene_root() && (retreive_locked || !_is_node_locked(canvas_item))) {
 			CanvasItemEditorSelectedItem *se = editor_selection->get_node_editor_data<CanvasItemEditorSelectedItem>(canvas_item);
 			if (se) {
@@ -1460,8 +1460,8 @@ bool CanvasItemEditor::_gui_input_open_scene_on_double_click(const Ref<InputEven
 		List<CanvasItem *> selection = _get_edited_canvas_items();
 		if (selection.size() == 1) {
 			CanvasItem *canvas_item = selection[0];
-			if (canvas_item->get_filename() != "" && canvas_item != editor->get_edited_scene()) {
-				editor->open_request(canvas_item->get_filename());
+			if (canvas_item->get_scene_file_path() != "" && canvas_item != editor->get_edited_scene()) {
+				editor->open_request(canvas_item->get_scene_file_path());
 				return true;
 			}
 		}
@@ -2927,7 +2927,7 @@ void CanvasItemEditor::_draw_ruler_tool() {
 		viewport->draw_string(font, text_pos, TS->format_number(vformat("%.1f px", length_vector.length())), HALIGN_LEFT, -1, font_size, font_color, outline_size, outline_color);
 
 		if (draw_secondary_lines) {
-			const real_t horizontal_angle_rad = atan2(length_vector.y, length_vector.x);
+			const real_t horizontal_angle_rad = length_vector.angle();
 			const real_t vertical_angle_rad = Math_PI / 2.0 - horizontal_angle_rad;
 			const int horizontal_angle = round(180 * horizontal_angle_rad / Math_PI);
 			const int vertical_angle = round(180 * vertical_angle_rad / Math_PI);
@@ -3782,8 +3782,8 @@ void CanvasItemEditor::_notification(int p_what) {
 		}
 
 		// Update the viewport if bones changes
-		for (Map<BoneKey, BoneList>::Element *E = bone_list.front(); E; E = E->next()) {
-			Object *b = ObjectDB::get_instance(E->key().from);
+		for (KeyValue<BoneKey, BoneList> &E : bone_list) {
+			Object *b = ObjectDB::get_instance(E.key.from);
 			if (!b) {
 				viewport->update();
 				break;
@@ -3796,14 +3796,14 @@ void CanvasItemEditor::_notification(int p_what) {
 
 			Transform2D global_xform = b2->get_global_transform();
 
-			if (global_xform != E->get().xform) {
-				E->get().xform = global_xform;
+			if (global_xform != E.value.xform) {
+				E.value.xform = global_xform;
 				viewport->update();
 			}
 
 			Bone2D *bone = Object::cast_to<Bone2D>(b);
-			if (bone && bone->get_length() != E->get().length) {
-				E->get().length = bone->get_length();
+			if (bone && bone->get_length() != E.value.length) {
+				E.value.length = bone->get_length();
 				viewport->update();
 			}
 		}
@@ -3968,7 +3968,7 @@ void CanvasItemEditor::edit(CanvasItem *p_canvas_item) {
 void CanvasItemEditor::_update_context_menu_stylebox() {
 	// This must be called when the theme changes to follow the new accent color.
 	Ref<StyleBoxFlat> context_menu_stylebox = memnew(StyleBoxFlat);
-	const Color accent_color = EditorNode::get_singleton()->get_gui_base()->get_theme_color("accent_color", "Editor");
+	const Color accent_color = EditorNode::get_singleton()->get_gui_base()->get_theme_color(SNAME("accent_color"), SNAME("Editor"));
 	context_menu_stylebox->set_bg_color(accent_color * Color(1, 1, 1, 0.1));
 	// Add an underline to the StyleBox, but prevent its minimum vertical size from changing.
 	context_menu_stylebox->set_border_color(accent_color);
@@ -4263,8 +4263,8 @@ void CanvasItemEditor::_button_tool_select(int p_index) {
 void CanvasItemEditor::_insert_animation_keys(bool p_location, bool p_rotation, bool p_scale, bool p_on_existing) {
 	Map<Node *, Object *> &selection = editor_selection->get_selection();
 
-	for (Map<Node *, Object *>::Element *E = selection.front(); E; E = E->next()) {
-		CanvasItem *canvas_item = Object::cast_to<CanvasItem>(E->key());
+	for (const KeyValue<Node *, Object *> &E : selection) {
+		CanvasItem *canvas_item = Object::cast_to<CanvasItem>(E.key);
 		if (!canvas_item || !canvas_item->is_visible_in_tree()) {
 			continue;
 		}
@@ -4695,8 +4695,8 @@ void CanvasItemEditor::_popup_callback(int p_op) {
 
 			Map<Node *, Object *> &selection = editor_selection->get_selection();
 
-			for (Map<Node *, Object *>::Element *E = selection.front(); E; E = E->next()) {
-				CanvasItem *canvas_item = Object::cast_to<CanvasItem>(E->key());
+			for (const KeyValue<Node *, Object *> &E : selection) {
+				CanvasItem *canvas_item = Object::cast_to<CanvasItem>(E.key);
 				if (!canvas_item || !canvas_item->is_visible_in_tree()) {
 					continue;
 				}
@@ -4741,8 +4741,8 @@ void CanvasItemEditor::_popup_callback(int p_op) {
 		case ANIM_CLEAR_POSE: {
 			Map<Node *, Object *> &selection = editor_selection->get_selection();
 
-			for (Map<Node *, Object *>::Element *E = selection.front(); E; E = E->next()) {
-				CanvasItem *canvas_item = Object::cast_to<CanvasItem>(E->key());
+			for (const KeyValue<Node *, Object *> &E : selection) {
+				CanvasItem *canvas_item = Object::cast_to<CanvasItem>(E.key);
 				if (!canvas_item || !canvas_item->is_visible_in_tree()) {
 					continue;
 				}
@@ -4816,8 +4816,8 @@ void CanvasItemEditor::_popup_callback(int p_op) {
 			Node *editor_root = EditorNode::get_singleton()->get_edited_scene()->get_tree()->get_edited_scene_root();
 
 			undo_redo->create_action(TTR("Create Custom Bone2D(s) from Node(s)"));
-			for (Map<Node *, Object *>::Element *E = selection.front(); E; E = E->next()) {
-				Node2D *n2d = Object::cast_to<Node2D>(E->key());
+			for (const KeyValue<Node *, Object *> &E : selection) {
+				Node2D *n2d = Object::cast_to<Node2D>(E.key);
 
 				Bone2D *new_bone = memnew(Bone2D);
 				String new_bone_name = n2d->get_name();
@@ -4861,8 +4861,8 @@ void CanvasItemEditor::_focus_selection(int p_op) {
 	int count = 0;
 
 	Map<Node *, Object *> &selection = editor_selection->get_selection();
-	for (Map<Node *, Object *>::Element *E = selection.front(); E; E = E->next()) {
-		CanvasItem *canvas_item = Object::cast_to<CanvasItem>(E->key());
+	for (const KeyValue<Node *, Object *> &E : selection) {
+		CanvasItem *canvas_item = Object::cast_to<CanvasItem>(E.key);
 		if (!canvas_item) {
 			continue;
 		}
@@ -4896,10 +4896,9 @@ void CanvasItemEditor::_focus_selection(int p_op) {
 	};
 
 	if (p_op == VIEW_CENTER_TO_SELECTION) {
-		center = rect.position + rect.size / 2;
+		center = rect.get_center();
 		Vector2 offset = viewport->get_size() / 2 - editor->get_scene_root()->get_global_canvas_transform().xform(center);
-		view_offset.x -= Math::round(offset.x / zoom);
-		view_offset.y -= Math::round(offset.y / zoom);
+		view_offset -= (offset / zoom).round();
 		update_viewport();
 
 	} else { // VIEW_FRAME_TO_SELECTION
@@ -5801,7 +5800,7 @@ void CanvasItemEditorViewport::_remove_preview() {
 }
 
 bool CanvasItemEditorViewport::_cyclical_dependency_exists(const String &p_target_scene_path, Node *p_desired_node) {
-	if (p_desired_node->get_filename() == p_target_scene_path) {
+	if (p_desired_node->get_scene_file_path() == p_target_scene_path) {
 		return true;
 	}
 
@@ -5898,14 +5897,14 @@ bool CanvasItemEditorViewport::_create_instance(Node *parent, String &path, cons
 		return false;
 	}
 
-	if (editor->get_edited_scene()->get_filename() != "") { // cyclical instancing
-		if (_cyclical_dependency_exists(editor->get_edited_scene()->get_filename(), instantiated_scene)) {
+	if (editor->get_edited_scene()->get_scene_file_path() != "") { // cyclical instancing
+		if (_cyclical_dependency_exists(editor->get_edited_scene()->get_scene_file_path(), instantiated_scene)) {
 			memdelete(instantiated_scene);
 			return false;
 		}
 	}
 
-	instantiated_scene->set_filename(ProjectSettings::get_singleton()->localize_path(path));
+	instantiated_scene->set_scene_file_path(ProjectSettings::get_singleton()->localize_path(path));
 
 	editor_data->get_undo_redo().add_do_method(parent, "add_child", instantiated_scene);
 	editor_data->get_undo_redo().add_do_method(instantiated_scene, "set_owner", editor->get_edited_scene());

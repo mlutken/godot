@@ -137,6 +137,7 @@
 				* control is obstructed by another [Control] on top of it, which doesn't have [member mouse_filter] set to [constant MOUSE_FILTER_IGNORE];
 				* control's parent has [member mouse_filter] set to [constant MOUSE_FILTER_STOP] or has accepted the event;
 				* it happens outside the parent's rectangle and the parent has either [member rect_clip_content] enabled.
+				[b]Note:[/b] Event position is relative to the control origin.
 			</description>
 		</method>
 		<method name="_has_point" qualifiers="virtual const">
@@ -457,6 +458,27 @@
 				See [method get_theme_color] for details.
 			</description>
 		</method>
+		<method name="get_theme_default_base_scale" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the default base scale value from the first matching [Theme] in the tree if that [Theme] has a valid [member Theme.default_base_scale] value.
+				See [method get_theme_color] for details.
+			</description>
+		</method>
+		<method name="get_theme_default_font" qualifiers="const">
+			<return type="Font" />
+			<description>
+				Returns the default font from the first matching [Theme] in the tree if that [Theme] has a valid [member Theme.default_font] value.
+				See [method get_theme_color] for details.
+			</description>
+		</method>
+		<method name="get_theme_default_font_size" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the default font size value from the first matching [Theme] in the tree if that [Theme] has a valid [member Theme.default_font_size] value.
+				See [method get_theme_color] for details.
+			</description>
+		</method>
 		<method name="get_theme_font" qualifiers="const">
 			<return type="Font" />
 			<argument index="0" name="name" type="StringName" />
@@ -741,10 +763,10 @@
 		</method>
 		<method name="set_drag_forwarding">
 			<return type="void" />
-			<argument index="0" name="target" type="Control" />
+			<argument index="0" name="target" type="Node" />
 			<description>
-				Forwards the handling of this control's drag and drop to [code]target[/code] control.
-				Forwarding can be implemented in the target control similar to the methods [method _get_drag_data], [method _can_drop_data], and [method _drop_data] but with two differences:
+				Forwards the handling of this control's drag and drop to [code]target[/code] node.
+				Forwarding can be implemented in the target node similar to the methods [method _get_drag_data], [method _can_drop_data], and [method _drop_data] but with two differences:
 				1. The function name must be suffixed with [b]_fw[/b]
 				2. The function must take an extra argument that is the control doing the forwarding
 				[codeblocks]

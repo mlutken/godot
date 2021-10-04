@@ -35,7 +35,6 @@
 #include "core/os/os.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_scale.h"
 #include "editor/editor_settings.h"
 #endif
 #include "scene/main/window.h"
@@ -44,17 +43,7 @@ List<Color> ColorPicker::preset_cache;
 
 void ColorPicker::_notification(int p_what) {
 	switch (p_what) {
-		case NOTIFICATION_THEME_CHANGED: {
-			btn_pick->set_icon(get_theme_icon(SNAME("screen_picker"), SNAME("ColorPicker")));
-			btn_add_preset->set_icon(get_theme_icon(SNAME("add_preset")));
-			_update_presets();
-			_update_controls();
-		} break;
 		case NOTIFICATION_ENTER_TREE: {
-			btn_pick->set_icon(get_theme_icon(SNAME("screen_picker"), SNAME("ColorPicker")));
-			btn_add_preset->set_icon(get_theme_icon(SNAME("add_preset")));
-
-			_update_controls();
 			_update_color();
 
 #ifdef TOOLS_ENABLED
@@ -71,18 +60,39 @@ void ColorPicker::_notification(int p_what) {
 				}
 			}
 #endif
-		} break;
-		case NOTIFICATION_PARENTED: {
+			[[fallthrough]];
+		}
+		case NOTIFICATION_THEME_CHANGED: {
+			btn_pick->set_icon(get_theme_icon(SNAME("screen_picker"), SNAME("ColorPicker")));
+			btn_add_preset->set_icon(get_theme_icon(SNAME("add_preset")));
+
+			uv_edit->set_custom_minimum_size(Size2(get_theme_constant(SNAME("sv_width")), get_theme_constant(SNAME("sv_height"))));
+			w_edit->set_custom_minimum_size(Size2(get_theme_constant(SNAME("h_width")), 0));
+
+			wheel_edit->set_custom_minimum_size(Size2(get_theme_constant(SNAME("sv_width")), get_theme_constant(SNAME("sv_height"))));
+			wheel_margin->add_theme_constant_override("margin_bottom", 8 * get_theme_default_base_scale());
+
 			for (int i = 0; i < 4; i++) {
+				labels[i]->set_custom_minimum_size(Size2(get_theme_constant(SNAME("label_width")), 0));
 				set_offset((Side)i, get_offset((Side)i) + get_theme_constant(SNAME("margin")));
 			}
+
+			if (Engine::get_singleton()->is_editor_hint()) {
+				// Adjust for the width of the "Script" icon.
+				text_type->set_custom_minimum_size(Size2(28 * get_theme_default_base_scale(), 0));
+			}
+
+			_update_presets();
+			_update_controls();
 		} break;
+
 		case NOTIFICATION_VISIBILITY_CHANGED: {
 			Popup *p = Object::cast_to<Popup>(get_parent());
 			if (p) {
 				p->set_size(Size2(get_combined_minimum_size().width + get_theme_constant(SNAME("margin")) * 2, get_combined_minimum_size().height + get_theme_constant(SNAME("margin")) * 2));
 			}
 		} break;
+
 		case NOTIFICATION_WM_CLOSE_REQUEST: {
 			if (screen != nullptr && screen->is_visible()) {
 				screen->hide();
@@ -762,11 +772,7 @@ void ColorPicker::_slider_draw(int p_which) {
 	Size2 size = scroll[p_which]->get_size();
 	Color left_color;
 	Color right_color;
-#ifdef TOOLS_ENABLED
-	const real_t margin = 4 * EDSCALE;
-#else
-	const real_t margin = 4;
-#endif
+	const real_t margin = 4 * get_theme_default_base_scale();
 
 	if (p_which == 3) {
 		scroll[p_which]->draw_texture_rect(get_theme_icon(SNAME("sample_bg"), SNAME("ColorPicker")), Rect2(Point2(0, margin), Size2(size.x, margin)), true);
@@ -827,7 +833,7 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 				real_t dist = center.distance_to(bev->get_position());
 
 				if (dist <= center.x) {
-					real_t rad = Math::atan2(bev->get_position().y - center.y, bev->get_position().x - center.x);
+					real_t rad = bev->get_position().angle_to_point(center);
 					h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
 					s = CLAMP(dist / center.x, 0, 1);
 				} else {
@@ -844,7 +850,7 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 						real_t dist = center.distance_to(bev->get_position());
 
 						if (dist >= center.x * 0.84 && dist <= center.x) {
-							real_t rad = Math::atan2(bev->get_position().y - center.y, bev->get_position().x - center.x);
+							real_t rad = bev->get_position().angle_to_point(center);
 							h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
 							spinning = true;
 						} else {
@@ -889,12 +895,12 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 		Vector2 center = c->get_size() / 2.0;
 		if (picker_type == SHAPE_VHS_CIRCLE) {
 			real_t dist = center.distance_to(mev->get_position());
-			real_t rad = Math::atan2(mev->get_position().y - center.y, mev->get_position().x - center.x);
+			real_t rad = mev->get_position().angle_to_point(center);
 			h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
 			s = CLAMP(dist / center.x, 0, 1);
 		} else {
 			if (spinning) {
-				real_t rad = Math::atan2(mev->get_position().y - center.y, mev->get_position().x - center.x);
+				real_t rad = mev->get_position().angle_to_point(center);
 				h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
 			} else {
 				real_t corner_x = (c == wheel_uv) ? center.x - Math_SQRT12 * c->get_size().width * 0.42 : 0;
@@ -996,7 +1002,7 @@ void ColorPicker::_screen_input(const Ref<InputEvent> &p_event) {
 	Ref<InputEventMouseMotion> mev = p_event;
 	if (mev.is_valid()) {
 		Viewport *r = get_tree()->get_root();
-		if (!r->get_visible_rect().has_point(Point2(mev->get_global_position().x, mev->get_global_position().y))) {
+		if (!r->get_visible_rect().has_point(mev->get_global_position())) {
 			return;
 		}
 
@@ -1147,7 +1153,6 @@ ColorPicker::ColorPicker() :
 	uv_edit->set_mouse_filter(MOUSE_FILTER_PASS);
 	uv_edit->set_h_size_flags(SIZE_EXPAND_FILL);
 	uv_edit->set_v_size_flags(SIZE_EXPAND_FILL);
-	uv_edit->set_custom_minimum_size(Size2(get_theme_constant(SNAME("sv_width")), get_theme_constant(SNAME("sv_height"))));
 	uv_edit->connect("draw", callable_mp(this, &ColorPicker::_hsv_draw), make_binds(0, uv_edit));
 
 	HBoxContainer *hb_smpl = memnew(HBoxContainer);
@@ -1219,9 +1224,6 @@ ColorPicker::ColorPicker() :
 	text_type->set_text("#");
 	text_type->set_tooltip(TTR("Switch between hexadecimal and code values."));
 	if (Engine::get_singleton()->is_editor_hint()) {
-#ifdef TOOLS_ENABLED
-		text_type->set_custom_minimum_size(Size2(28 * EDSCALE, 0)); // Adjust for the width of the "Script" icon.
-#endif
 		text_type->connect("pressed", callable_mp(this, &ColorPicker::_text_type_toggled));
 	} else {
 		text_type->set_flat(true);
@@ -1236,7 +1238,6 @@ ColorPicker::ColorPicker() :
 
 	wheel_edit->set_h_size_flags(SIZE_EXPAND_FILL);
 	wheel_edit->set_v_size_flags(SIZE_EXPAND_FILL);
-	wheel_edit->set_custom_minimum_size(Size2(get_theme_constant(SNAME("sv_width")), get_theme_constant(SNAME("sv_height"))));
 	hb_edit->add_child(wheel_edit);
 
 	wheel_mat.instantiate();
@@ -1244,12 +1245,7 @@ ColorPicker::ColorPicker() :
 	circle_mat.instantiate();
 	circle_mat->set_shader(circle_shader);
 
-	MarginContainer *wheel_margin(memnew(MarginContainer));
-#ifdef TOOLS_ENABLED
-	wheel_margin->add_theme_constant_override("margin_bottom", 8 * EDSCALE);
-#else
 	wheel_margin->add_theme_constant_override("margin_bottom", 8);
-#endif
 	wheel_edit->add_child(wheel_margin);
 
 	wheel_margin->add_child(wheel);
@@ -1261,7 +1257,6 @@ ColorPicker::ColorPicker() :
 	wheel_uv->connect("draw", callable_mp(this, &ColorPicker::_hsv_draw), make_binds(0, wheel_uv));
 
 	hb_edit->add_child(w_edit);
-	w_edit->set_custom_minimum_size(Size2(get_theme_constant(SNAME("h_width")), 0));
 	w_edit->set_h_size_flags(SIZE_FILL);
 	w_edit->set_v_size_flags(SIZE_EXPAND_FILL);
 	w_edit->connect("gui_input", callable_mp(this, &ColorPicker::_w_input));

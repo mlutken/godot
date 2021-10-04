@@ -50,7 +50,7 @@ void draw_margin_line(Control *edit_draw, Vector2 from, Vector2 to) {
 			EditorNode::get_singleton()->get_theme_base()->get_theme_color(SNAME("mono_color"), SNAME("Editor")).inverted() * Color(1, 1, 1, 0.5),
 			Math::round(2 * EDSCALE));
 
-	while ((to - from).length_squared() > 200) {
+	while (from.distance_squared_to(to) > 200) {
 		edit_draw->draw_line(
 				from,
 				from + line,
@@ -321,12 +321,12 @@ void TextureRegionEditor::_region_input(const Ref<InputEvent> &p_input) {
 						prev_margin = margins[3];
 					}
 					if (edited_margin >= 0) {
-						drag_from = Vector2(mb->get_position().x, mb->get_position().y);
+						drag_from = mb->get_position();
 						drag = true;
 					}
 				}
 				if (edited_margin < 0 && snap_mode == SNAP_AUTOSLICE) {
-					Vector2 point = mtx.affine_inverse().xform(Vector2(mb->get_position().x, mb->get_position().y));
+					Vector2 point = mtx.affine_inverse().xform(mb->get_position());
 					for (const Rect2 &E : autoslice_cache) {
 						if (E.has_point(point)) {
 							rect = E;
@@ -344,7 +344,7 @@ void TextureRegionEditor::_region_input(const Ref<InputEvent> &p_input) {
 									r = obj_styleBox->get_region_rect();
 								}
 								rect.expand_to(r.position);
-								rect.expand_to(r.position + r.size);
+								rect.expand_to(r.get_end());
 							}
 							undo_redo->create_action(TTR("Set Region Rect"));
 							if (atlas_tex.is_valid()) {
@@ -372,7 +372,7 @@ void TextureRegionEditor::_region_input(const Ref<InputEvent> &p_input) {
 						}
 					}
 				} else if (edited_margin < 0) {
-					drag_from = mtx.affine_inverse().xform(Vector2(mb->get_position().x, mb->get_position().y));
+					drag_from = mtx.affine_inverse().xform(mb->get_position());
 					if (snap_mode == SNAP_PIXEL) {
 						drag_from = drag_from.snapped(Vector2(1, 1));
 					} else if (snap_mode == SNAP_GRID) {
@@ -393,7 +393,7 @@ void TextureRegionEditor::_region_input(const Ref<InputEvent> &p_input) {
 
 					for (int i = 0; i < 8; i++) {
 						Vector2 tuv = endpoints[i];
-						if (tuv.distance_to(Vector2(mb->get_position().x, mb->get_position().y)) < handle_radius) {
+						if (tuv.distance_to(mb->get_position()) < handle_radius) {
 							drag_index = i;
 						}
 					}
@@ -544,7 +544,7 @@ void TextureRegionEditor::_region_input(const Ref<InputEvent> &p_input) {
 
 				switch (drag_index) {
 					case 0: {
-						Vector2 p = rect_prev.position + rect_prev.size;
+						Vector2 p = rect_prev.get_end();
 						rect = Rect2(p, Size2());
 						rect.expand_to(new_pos);
 						apply_rect(rect);
@@ -674,8 +674,7 @@ void TextureRegionEditor::_zoom_on_position(float p_zoom, Point2 p_position) {
 	draw_zoom = p_zoom;
 	Point2 ofs = p_position;
 	ofs = ofs / prev_zoom - ofs / draw_zoom;
-	draw_ofs.x = Math::round(draw_ofs.x + ofs.x);
-	draw_ofs.y = Math::round(draw_ofs.y + ofs.y);
+	draw_ofs = (draw_ofs + ofs).round();
 
 	edit_draw->update();
 }

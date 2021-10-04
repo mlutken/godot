@@ -41,10 +41,6 @@
 
 #include "box_container.h"
 
-#ifdef TOOLS_ENABLED
-#include "editor/editor_scale.h"
-#endif
-
 #include <limits.h>
 
 Size2 TreeItem::Cell::get_icon_size() const {
@@ -144,6 +140,7 @@ void TreeItem::_change_tree(Tree *p_tree) {
 /* cell mode */
 void TreeItem::set_cell_mode(int p_column, TreeCellMode p_mode) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	Cell &c = cells.write[p_column];
 	c.mode = p_mode;
 	c.min = 0;
@@ -155,8 +152,9 @@ void TreeItem::set_cell_mode(int p_column, TreeCellMode p_mode) {
 	c.text = "";
 	c.dirty = true;
 	c.icon_max_w = 0;
+	c.cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 TreeItem::TreeCellMode TreeItem::get_cell_mode(int p_column) const {
@@ -167,22 +165,27 @@ TreeItem::TreeCellMode TreeItem::get_cell_mode(int p_column) const {
 /* check mode */
 void TreeItem::set_checked(int p_column, bool p_checked) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	cells.write[p_column].checked = p_checked;
 	cells.write[p_column].indeterminate = false;
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 void TreeItem::set_indeterminate(int p_column, bool p_indeterminate) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	// Prevent uncheck if indeterminate set to false twice
 	if (p_indeterminate == cells[p_column].indeterminate) {
 		return;
 	}
+
 	cells.write[p_column].indeterminate = p_indeterminate;
 	cells.write[p_column].checked = false;
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 bool TreeItem::is_checked(int p_column) const {
@@ -214,8 +217,10 @@ void TreeItem::set_text(int p_column, String p_text) {
 		}
 		cells.write[p_column].step = 0;
 	}
+
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 String TreeItem::get_text(int p_column) const {
@@ -231,7 +236,7 @@ void TreeItem::set_text_direction(int p_column, Control::TextDirection p_text_di
 		cells.write[p_column].dirty = true;
 		_changed_notify(p_column);
 	}
-	cached_minimum_size_dirty = true;
+	cells.write[p_column].cached_minimum_size_dirty = true;
 }
 
 Control::TextDirection TreeItem::get_text_direction(int p_column) const {
@@ -241,10 +246,12 @@ Control::TextDirection TreeItem::get_text_direction(int p_column) const {
 
 void TreeItem::clear_opentype_features(int p_column) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	cells.write[p_column].opentype_features.clear();
 	cells.write[p_column].dirty = true;
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 void TreeItem::set_opentype_feature(int p_column, const String &p_name, int p_value) {
@@ -253,8 +260,9 @@ void TreeItem::set_opentype_feature(int p_column, const String &p_name, int p_va
 	if (!cells[p_column].opentype_features.has(tag) || (int)cells[p_column].opentype_features[tag] != p_value) {
 		cells.write[p_column].opentype_features[tag] = p_value;
 		cells.write[p_column].dirty = true;
+		cells.write[p_column].cached_minimum_size_dirty = true;
+
 		_changed_notify(p_column);
-		cached_minimum_size_dirty = true;
 	}
 }
 
@@ -269,11 +277,13 @@ int TreeItem::get_opentype_feature(int p_column, const String &p_name) const {
 
 void TreeItem::set_structured_text_bidi_override(int p_column, Control::StructuredTextParser p_parser) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	if (cells[p_column].st_parser != p_parser) {
 		cells.write[p_column].st_parser = p_parser;
 		cells.write[p_column].dirty = true;
+		cells.write[p_column].cached_minimum_size_dirty = true;
+
 		_changed_notify(p_column);
-		cached_minimum_size_dirty = true;
 	}
 }
 
@@ -284,10 +294,12 @@ Control::StructuredTextParser TreeItem::get_structured_text_bidi_override(int p_
 
 void TreeItem::set_structured_text_bidi_override_options(int p_column, Array p_args) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	cells.write[p_column].st_args = p_args;
 	cells.write[p_column].dirty = true;
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 Array TreeItem::get_structured_text_bidi_override_options(int p_column) const {
@@ -297,11 +309,13 @@ Array TreeItem::get_structured_text_bidi_override_options(int p_column) const {
 
 void TreeItem::set_language(int p_column, const String &p_language) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	if (cells[p_column].language != p_language) {
 		cells.write[p_column].language = p_language;
 		cells.write[p_column].dirty = true;
+		cells.write[p_column].cached_minimum_size_dirty = true;
+
 		_changed_notify(p_column);
-		cached_minimum_size_dirty = true;
 	}
 }
 
@@ -312,10 +326,11 @@ String TreeItem::get_language(int p_column) const {
 
 void TreeItem::set_suffix(int p_column, String p_suffix) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	cells.write[p_column].suffix = p_suffix;
+	cells.write[p_column].cached_minimum_size_dirty = true;
 
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 String TreeItem::get_suffix(int p_column) const {
@@ -325,9 +340,11 @@ String TreeItem::get_suffix(int p_column) const {
 
 void TreeItem::set_icon(int p_column, const Ref<Texture2D> &p_icon) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	cells.write[p_column].icon = p_icon;
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 Ref<Texture2D> TreeItem::get_icon(int p_column) const {
@@ -337,9 +354,11 @@ Ref<Texture2D> TreeItem::get_icon(int p_column) const {
 
 void TreeItem::set_icon_region(int p_column, const Rect2 &p_icon_region) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	cells.write[p_column].icon_region = p_icon_region;
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 Rect2 TreeItem::get_icon_region(int p_column) const {
@@ -360,9 +379,11 @@ Color TreeItem::get_icon_modulate(int p_column) const {
 
 void TreeItem::set_icon_max_width(int p_column, int p_max) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	cells.write[p_column].icon_max_w = p_max;
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 int TreeItem::get_icon_max_width(int p_column) const {
@@ -474,8 +495,11 @@ void TreeItem::uncollapse_tree() {
 
 void TreeItem::set_custom_minimum_height(int p_height) {
 	custom_min_height = p_height;
+
+	for (Cell &c : cells)
+		c.cached_minimum_size_dirty = true;
+
 	_changed_notify();
-	cached_minimum_size_dirty = true;
 }
 
 int TreeItem::get_custom_minimum_height() const {
@@ -799,8 +823,9 @@ void TreeItem::add_button(int p_column, const Ref<Texture2D> &p_button, int p_id
 	button.disabled = p_disabled;
 	button.tooltip = p_tooltip;
 	cells.write[p_column].buttons.push_back(button);
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 int TreeItem::get_button_count(int p_column) const {
@@ -843,8 +868,9 @@ void TreeItem::set_button(int p_column, int p_idx, const Ref<Texture2D> &p_butto
 	ERR_FAIL_INDEX(p_column, cells.size());
 	ERR_FAIL_INDEX(p_idx, cells[p_column].buttons.size());
 	cells.write[p_column].buttons.write[p_idx].texture = p_button;
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 void TreeItem::set_button_color(int p_column, int p_idx, const Color &p_color) {
@@ -859,8 +885,9 @@ void TreeItem::set_button_disabled(int p_column, int p_idx, bool p_disabled) {
 	ERR_FAIL_INDEX(p_idx, cells[p_column].buttons.size());
 
 	cells.write[p_column].buttons.write[p_idx].disabled = p_disabled;
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 bool TreeItem::is_button_disabled(int p_column, int p_idx) const {
@@ -872,9 +899,11 @@ bool TreeItem::is_button_disabled(int p_column, int p_idx) const {
 
 void TreeItem::set_editable(int p_column, bool p_editable) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	cells.write[p_column].editable = p_editable;
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 bool TreeItem::is_editable(int p_column) {
@@ -906,8 +935,9 @@ void TreeItem::clear_custom_color(int p_column) {
 
 void TreeItem::set_custom_font(int p_column, const Ref<Font> &p_font) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	cells.write[p_column].custom_font = p_font;
-	cached_minimum_size_dirty = true;
+	cells.write[p_column].cached_minimum_size_dirty = true;
 }
 
 Ref<Font> TreeItem::get_custom_font(int p_column) const {
@@ -917,8 +947,9 @@ Ref<Font> TreeItem::get_custom_font(int p_column) const {
 
 void TreeItem::set_custom_font_size(int p_column, int p_font_size) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	cells.write[p_column].custom_font_size = p_font_size;
-	cached_minimum_size_dirty = true;
+	cells.write[p_column].cached_minimum_size_dirty = true;
 }
 
 int TreeItem::get_custom_font_size(int p_column) const {
@@ -961,8 +992,9 @@ Color TreeItem::get_custom_bg_color(int p_column) const {
 
 void TreeItem::set_custom_as_button(int p_column, bool p_button) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	cells.write[p_column].custom_button = p_button;
-	cached_minimum_size_dirty = true;
+	cells.write[p_column].cached_minimum_size_dirty = true;
 }
 
 bool TreeItem::is_custom_set_as_button(int p_column) const {
@@ -972,9 +1004,11 @@ bool TreeItem::is_custom_set_as_button(int p_column) const {
 
 void TreeItem::set_text_align(int p_column, TextAlign p_align) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	cells.write[p_column].text_align = p_align;
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 TreeItem::TextAlign TreeItem::get_text_align(int p_column) const {
@@ -984,9 +1018,11 @@ TreeItem::TextAlign TreeItem::get_text_align(int p_column) const {
 
 void TreeItem::set_expand_right(int p_column, bool p_enable) {
 	ERR_FAIL_INDEX(p_column, cells.size());
+
 	cells.write[p_column].expand_right = p_enable;
+	cells.write[p_column].cached_minimum_size_dirty = true;
+
 	_changed_notify(p_column);
-	cached_minimum_size_dirty = true;
 }
 
 bool TreeItem::get_expand_right(int p_column) const {
@@ -996,8 +1032,11 @@ bool TreeItem::get_expand_right(int p_column) const {
 
 void TreeItem::set_disable_folding(bool p_disable) {
 	disable_folding = p_disable;
+
+	for (Cell &c : cells)
+		c.cached_minimum_size_dirty = true;
+
 	_changed_notify(0);
-	cached_minimum_size_dirty = true;
 }
 
 bool TreeItem::is_folding_disabled() const {
@@ -1009,14 +1048,12 @@ Size2 TreeItem::get_minimum_size(int p_column) {
 	Tree *tree = get_tree();
 	ERR_FAIL_COND_V(!tree, Size2());
 
-	if (cached_minimum_size_dirty) {
+	const TreeItem::Cell &cell = cells[p_column];
+
+	if (cell.cached_minimum_size_dirty) {
 		Size2 size;
 
-		// Default offset?
-		//size.width += (disable_folding || tree->hide_folding) ? tree->cache.hseparation : tree->cache.item_margin;
-
 		// Text.
-		const TreeItem::Cell &cell = cells[p_column];
 		if (!cell.text.is_empty()) {
 			if (cell.dirty) {
 				tree->update_item_cell(this, p_column);
@@ -1052,11 +1089,11 @@ Size2 TreeItem::get_minimum_size(int p_column) {
 			size.width += (cell.buttons.size() - 1) * tree->cache.button_margin;
 		}
 
-		cached_minimum_size = size;
-		cached_minimum_size_dirty = false;
+		cells.write[p_column].cached_minimum_size = size;
+		cells.write[p_column].cached_minimum_size_dirty = false;
 	}
 
-	return cached_minimum_size;
+	return cell.cached_minimum_size;
 }
 
 Variant TreeItem::_call_recursive_bind(const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
@@ -1336,11 +1373,9 @@ void Tree::update_cache() {
 	cache.title_button_hover = get_theme_stylebox(SNAME("title_button_hover"));
 	cache.title_button_color = get_theme_color(SNAME("title_button_color"));
 
-	v_scroll->set_custom_step(cache.font->get_height(cache.font_size));
+	cache.base_scale = get_theme_default_base_scale();
 
-	for (TreeItem *item = get_root(); item; item = item->get_next()) {
-		item->cached_minimum_size_dirty = true;
-	}
+	v_scroll->set_custom_step(cache.font->get_height(cache.font_size));
 }
 
 int Tree::compute_item_height(TreeItem *p_item) const {
@@ -1712,7 +1747,7 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 			}
 
 			if ((select_mode == SELECT_ROW && selected_item == p_item) || p_item->cells[i].selected || !p_item->has_meta("__focus_rect")) {
-				Rect2i r(cell_rect.position, cell_rect.size);
+				Rect2i r = cell_rect;
 
 				p_item->set_meta("__focus_rect", Rect2(r.position, r.size));
 
@@ -1968,7 +2003,8 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 				arrow = cache.arrow;
 			}
 
-			Point2 apos = p_pos + p_draw_ofs + Point2i(0, (label_h - arrow->get_height()) / 2) - cache.offset;
+			Point2 apos = p_pos + Point2i(0, (label_h - arrow->get_height()) / 2) - cache.offset + p_draw_ofs;
+			apos.x += cache.item_margin - arrow->get_width();
 
 			if (rtl) {
 				apos.x = get_size().width - apos.x - arrow->get_width();
@@ -2008,15 +2044,9 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 						root_pos -= Point2i(cache.arrow->get_width(), 0);
 					}
 
-					float line_width = cache.relationship_line_width;
-					float parent_line_width = cache.parent_hl_line_width;
-					float children_line_width = cache.children_hl_line_width;
-
-#ifdef TOOLS_ENABLED
-					line_width *= Math::round(EDSCALE);
-					parent_line_width *= Math::round(EDSCALE);
-					children_line_width *= Math::round(EDSCALE);
-#endif
+					float line_width = cache.relationship_line_width * Math::round(cache.base_scale);
+					float parent_line_width = cache.parent_hl_line_width * Math::round(cache.base_scale);
+					float children_line_width = cache.children_hl_line_width * Math::round(cache.base_scale);
 
 					Point2i parent_pos = Point2i(parent_ofs - cache.arrow->get_width() / 2, p_pos.y + label_h / 2 + cache.arrow->get_height() / 2) - cache.offset + p_draw_ofs;
 
@@ -4000,10 +4030,12 @@ TreeItem *Tree::get_next_selected(TreeItem *p_item) {
 int Tree::get_column_minimum_width(int p_column) const {
 	ERR_FAIL_INDEX_V(p_column, columns.size(), -1);
 
+	// Use the custom minimum width.
 	int min_width = columns[p_column].custom_min_width;
 
+	// Check if the visible title of the column is wider.
 	if (show_column_titles) {
-		min_width = MAX(cache.font->get_string_size(columns[p_column].title).width, min_width);
+		min_width = MAX(cache.font->get_string_size(columns[p_column].title).width + cache.bg->get_margin(SIDE_LEFT) + cache.bg->get_margin(SIDE_RIGHT), min_width);
 	}
 
 	if (!columns[p_column].clip_content) {
@@ -4028,7 +4060,11 @@ int Tree::get_column_minimum_width(int p_column) const {
 			Size2 item_size = item->get_minimum_size(p_column);
 			if (p_column == 0) {
 				item_size.width += cache.item_margin * depth;
+			} else {
+				item_size.width += cache.hseparation;
 			}
+
+			// Check if the item is wider.
 			min_width = MAX(min_width, item_size.width);
 		}
 	}
@@ -4068,9 +4104,6 @@ int Tree::get_column_width(int p_column) const {
 		}
 	}
 
-	if (p_column < columns.size() - 1) {
-		column_width += cache.hseparation;
-	}
 	return column_width;
 }
 

@@ -308,6 +308,7 @@ private:
 	ConfirmationDialog *pick_main_scene;
 	Button *select_current_scene_button;
 	AcceptDialog *accept;
+	AcceptDialog *save_accept;
 	EditorAbout *about;
 	AcceptDialog *warning;
 
@@ -541,6 +542,7 @@ private:
 
 	String import_reload_fn;
 
+	Set<String> textfile_extensions;
 	Set<FileDialog *> file_dialogs;
 	Set<EditorFileDialog *> editor_file_dialogs;
 
@@ -814,6 +816,7 @@ public:
 	Ref<Texture2D> get_class_icon(const String &p_class, const String &p_fallback = "Object") const;
 
 	void show_accept(const String &p_text, const String &p_title);
+	void show_save_accept(const String &p_text, const String &p_title);
 	void show_warning(const String &p_text, const String &p_title = TTR("Warning!"));
 
 	void _copy_warning(const String &p_str);

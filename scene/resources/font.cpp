@@ -502,6 +502,11 @@ void FontData::set_data(const PackedByteArray &p_data) {
 }
 
 PackedByteArray FontData::get_data() const {
+	if (unlikely((size_t)data.size() != data_size)) {
+		PackedByteArray *data_w = const_cast<PackedByteArray *>(&data);
+		data_w->resize(data_size);
+		memcpy(data_w->ptrw(), data_ptr, data_size);
+	}
 	return data;
 }
 
@@ -1214,6 +1219,14 @@ void Font::add_data(const Ref<FontData> &p_data) {
 
 	if (data[data.size() - 1].is_valid()) {
 		data.write[data.size() - 1]->connect(SNAME("changed"), callable_mp(this, &Font::_data_changed), varray(), CONNECT_REFERENCE_COUNTED);
+		Dictionary data_var_list = p_data->get_supported_variation_list();
+		for (int j = 0; j < data_var_list.size(); j++) {
+			int32_t tag = data_var_list.get_key_at_index(j);
+			Vector3i value = data_var_list.get_value_at_index(j);
+			if (!variation_coordinates.has(tag) && !variation_coordinates.has(TS->tag_to_name(tag))) {
+				variation_coordinates[TS->tag_to_name(tag)] = value.z;
+			}
+		}
 	}
 
 	cache.clear();
@@ -1233,6 +1246,14 @@ void Font::set_data(int p_idx, const Ref<FontData> &p_data) {
 
 	data.write[p_idx] = p_data;
 	rids.write[p_idx] = RID();
+	Dictionary data_var_list = p_data->get_supported_variation_list();
+	for (int j = 0; j < data_var_list.size(); j++) {
+		int32_t tag = data_var_list.get_key_at_index(j);
+		Vector3i value = data_var_list.get_value_at_index(j);
+		if (!variation_coordinates.has(tag) && !variation_coordinates.has(TS->tag_to_name(tag))) {
+			variation_coordinates[TS->tag_to_name(tag)] = value.z;
+		}
+	}
 
 	if (data[p_idx].is_valid()) {
 		data.write[p_idx]->connect(SNAME("changed"), callable_mp(this, &Font::_data_changed), varray(), CONNECT_REFERENCE_COUNTED);
@@ -1383,7 +1404,7 @@ real_t Font::get_underline_thickness(int p_size) const {
 	return ret;
 }
 
-Size2 Font::get_string_size(const String &p_text, int p_size, HAlign p_align, real_t p_width, uint8_t p_flags) const {
+Size2 Font::get_string_size(const String &p_text, int p_size, HAlign p_align, real_t p_width, uint16_t p_flags) const {
 	ERR_FAIL_COND_V(data.is_empty(), Size2());
 
 	int size = (p_size <= 0) ? base_size : p_size;
@@ -1410,7 +1431,7 @@ Size2 Font::get_string_size(const String &p_text, int p_size, HAlign p_align, re
 	return buffer->get_size();
 }
 
-Size2 Font::get_multiline_string_size(const String &p_text, real_t p_width, int p_size, uint8_t p_flags) const {
+Size2 Font::get_multiline_string_size(const String &p_text, real_t p_width, int p_size, uint16_t p_flags) const {
 	ERR_FAIL_COND_V(data.is_empty(), Size2());
 
 	int size = (p_size <= 0) ? base_size : p_size;
@@ -1449,7 +1470,7 @@ Size2 Font::get_multiline_string_size(const String &p_text, real_t p_width, int 
 	return ret;
 }
 
-void Font::draw_string(RID p_canvas_item, const Point2 &p_pos, const String &p_text, HAlign p_align, real_t p_width, int p_size, const Color &p_modulate, int p_outline_size, const Color &p_outline_modulate, uint8_t p_flags) const {
+void Font::draw_string(RID p_canvas_item, const Point2 &p_pos, const String &p_text, HAlign p_align, real_t p_width, int p_size, const Color &p_modulate, int p_outline_size, const Color &p_outline_modulate, uint16_t p_flags) const {
 	ERR_FAIL_COND(data.is_empty());
 
 	int size = (p_size <= 0) ? base_size : p_size;
@@ -1491,7 +1512,7 @@ void Font::draw_string(RID p_canvas_item, const Point2 &p_pos, const String &p_t
 	buffer->draw(p_canvas_item, ofs, p_modulate);
 }
 
-void Font::draw_multiline_string(RID p_canvas_item, const Point2 &p_pos, const String &p_text, HAlign p_align, float p_width, int p_max_lines, int p_size, const Color &p_modulate, int p_outline_size, const Color &p_outline_modulate, uint8_t p_flags) const {
+void Font::draw_multiline_string(RID p_canvas_item, const Point2 &p_pos, const String &p_text, HAlign p_align, float p_width, int p_max_lines, int p_size, const Color &p_modulate, int p_outline_size, const Color &p_outline_modulate, uint16_t p_flags) const {
 	ERR_FAIL_COND(data.is_empty());
 
 	int size = (p_size <= 0) ? base_size : p_size;

@@ -191,6 +191,59 @@ void EditorSpinSlider::_grabber_gui_input(const Ref<InputEvent> &p_event) {
 	}
 }
 
+void EditorSpinSlider::_value_input_gui_input(const Ref<InputEvent> &p_event) {
+	Ref<InputEventKey> k = p_event;
+	if (k.is_valid() && k->is_pressed()) {
+		double step = get_step();
+		double real_step = step;
+		if (step < 1) {
+			double divisor = 1.0 / get_step();
+
+			if (trunc(divisor) == divisor) {
+				step = 1.0;
+			}
+		}
+
+		if (k->is_ctrl_pressed()) {
+			step *= 100.0;
+		} else if (k->is_shift_pressed()) {
+			step *= 10.0;
+		} else if (k->is_alt_pressed()) {
+			step *= 0.1;
+		}
+
+		uint32_t code = k->get_keycode();
+		switch (code) {
+			case KEY_UP: {
+				_evaluate_input_text();
+
+				double last_value = get_value();
+				set_value(last_value + step);
+				double new_value = get_value();
+
+				if (new_value < CLAMP(last_value + step, get_min(), get_max())) {
+					set_value(last_value + real_step);
+				}
+
+				value_input->set_text(get_text_value());
+			} break;
+			case KEY_DOWN: {
+				_evaluate_input_text();
+
+				double last_value = get_value();
+				set_value(last_value - step);
+				double new_value = get_value();
+
+				if (new_value > CLAMP(last_value - step, get_min(), get_max())) {
+					set_value(last_value - real_step);
+				}
+
+				value_input->set_text(get_text_value());
+			} break;
+		}
+	}
+}
+
 void EditorSpinSlider::_update_value_input_stylebox() {
 	if (!value_input) {
 		return;
@@ -277,9 +330,8 @@ void EditorSpinSlider::_draw_spin_slider() {
 
 	float text_start = rtl ? Math::round(sb->get_offset().x) : Math::round(sb->get_offset().x + label_width + sep);
 	Vector2 text_ofs = rtl ? Vector2(text_start + (number_width - TS->shaped_text_get_width(num_rid)), vofs) : Vector2(text_start, vofs);
-	const Vector<TextServer::Glyph> visual = TS->shaped_text_get_glyphs(num_rid);
-	int v_size = visual.size();
-	const TextServer::Glyph *glyphs = visual.ptr();
+	int v_size = TS->shaped_text_get_glyph_count(num_rid);
+	const Glyph *glyphs = TS->shaped_text_get_glyphs(num_rid);
 	for (int i = 0; i < v_size; i++) {
 		for (int j = 0; j < glyphs[i].repeat; j++) {
 			if (text_ofs.x >= text_start && (text_ofs.x + glyphs[i].advance) <= (text_start + number_width)) {
@@ -328,7 +380,7 @@ void EditorSpinSlider::_draw_spin_slider() {
 		Rect2 grabber_rect = Rect2(ofs + gofs, svofs + 1, grabber_w, 2 * EDSCALE);
 		draw_rect(grabber_rect, c);
 
-		grabbing_spinner_mouse_pos = get_global_position() + grabber_rect.position + grabber_rect.size * 0.5;
+		grabbing_spinner_mouse_pos = get_global_position() + grabber_rect.get_center();
 
 		bool display_grabber = (mouse_over_spin || mouse_over_grabber) && !grabbing_spinner && !(value_input_popup && value_input_popup->is_visible());
 		if (grabber->is_visible() != display_grabber) {
@@ -354,7 +406,7 @@ void EditorSpinSlider::_draw_spin_slider() {
 			Vector2 scale = get_global_transform_with_canvas().get_scale();
 			grabber->set_scale(scale);
 			grabber->set_size(Size2(0, 0));
-			grabber->set_position(get_global_position() + (grabber_rect.position + grabber_rect.size * 0.5 - grabber->get_size() * 0.5) * scale);
+			grabber->set_position(get_global_position() + (grabber_rect.get_center() - grabber->get_size() * 0.5) * scale);
 
 			if (mousewheel_over_grabber) {
 				Input::get_singleton()->warp_mouse_position(grabber->get_position() + grabber_rect.size);
@@ -585,11 +637,13 @@ void EditorSpinSlider::_ensure_input_popup() {
 	value_input_popup->connect("popup_hide", callable_mp(this, &EditorSpinSlider::_value_input_closed));
 	value_input->connect("text_submitted", callable_mp(this, &EditorSpinSlider::_value_input_submitted));
 	value_input->connect("focus_exited", callable_mp(this, &EditorSpinSlider::_value_focus_exited));
+	value_input->connect("gui_input", callable_mp(this, &EditorSpinSlider::_value_input_gui_input));
 
 	if (is_inside_tree()) {
 		_update_value_input_stylebox();
 	}
 }
+
 EditorSpinSlider::EditorSpinSlider() {
 	flat = false;
 	grabbing_spinner_attempt = false;

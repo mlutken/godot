@@ -51,7 +51,7 @@ static Ref<StyleBoxTexture> make_stylebox(T p_src, float p_left, float p_top, fl
 	} else {
 		texture = Ref<ImageTexture>(memnew(ImageTexture));
 		Ref<Image> img = memnew(Image(p_src));
-		const Size2 orig_size = Size2(img->get_width(), img->get_height());
+		const Size2 orig_size = img->get_size();
 		img->convert(Image::FORMAT_RGBA8);
 		img->resize(orig_size.x * scale, orig_size.y * scale);
 
@@ -97,7 +97,7 @@ template <class T>
 static Ref<Texture2D> make_icon(T p_src) {
 	Ref<ImageTexture> texture(memnew(ImageTexture));
 	Ref<Image> img = memnew(Image(p_src));
-	const Size2 orig_size = Size2(img->get_width(), img->get_height());
+	const Size2 orig_size = img->get_size();
 	img->convert(Image::FORMAT_RGBA8);
 	img->resize(orig_size.x * scale, orig_size.y * scale);
 	texture->create_from_image(img);
@@ -438,6 +438,8 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 	theme->set_color("caret_color", "TextEdit", control_font_color);
 	theme->set_color("caret_background_color", "TextEdit", Color(0, 0, 0));
 	theme->set_color("word_highlighted_color", "TextEdit", Color(0.8, 0.9, 0.9, 0.15));
+	theme->set_color("search_result_color", "TextEdit", Color(0.3, 0.3, 0.3));
+	theme->set_color("search_result_border_color", "TextEdit", Color(0.3, 0.3, 0.3, 0.4));
 
 	theme->set_constant("line_spacing", "TextEdit", 4 * scale);
 	theme->set_constant("outline_size", "TextEdit", 0);
@@ -483,6 +485,8 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 	theme->set_color("line_number_color", "CodeEdit", Color(0.67, 0.67, 0.67, 0.4));
 	theme->set_color("word_highlighted_color", "CodeEdit", Color(0.8, 0.9, 0.9, 0.15));
 	theme->set_color("line_length_guideline_color", "CodeEdit", Color(0.3, 0.5, 0.8, 0.1));
+	theme->set_color("search_result_color", "CodeEdit", Color(0.3, 0.3, 0.3));
+	theme->set_color("search_result_border_color", "CodeEdit", Color(0.3, 0.3, 0.3, 0.4));
 
 	theme->set_constant("completion_lines", "CodeEdit", 7);
 	theme->set_constant("completion_max_width", "CodeEdit", 50);
@@ -786,8 +790,8 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 	theme->set_stylebox("tab_selected", "Tabs", sb_expand(make_stylebox(tab_current_png, 4, 3, 4, 1, 16, 3, 16, 2), 2, 2, 2, 2));
 	theme->set_stylebox("tab_unselected", "Tabs", sb_expand(make_stylebox(tab_behind_png, 5, 4, 5, 1, 16, 5, 16, 2), 3, 3, 3, 3));
 	theme->set_stylebox("tab_disabled", "Tabs", sb_expand(make_stylebox(tab_disabled_png, 5, 5, 5, 1, 16, 6, 16, 4), 3, 0, 3, 3));
-	theme->set_stylebox("button_pressed", "Tabs", make_stylebox(button_pressed_png, 4, 4, 4, 4));
-	theme->set_stylebox("button", "Tabs", make_stylebox(button_normal_png, 4, 4, 4, 4));
+	theme->set_stylebox("close_bg_pressed", "Tabs", make_stylebox(button_pressed_png, 4, 4, 4, 4));
+	theme->set_stylebox("close_bg_highlight", "Tabs", make_stylebox(button_normal_png, 4, 4, 4, 4));
 
 	theme->set_icon("increment", "Tabs", make_icon(scroll_button_right_png));
 	theme->set_icon("increment_highlight", "Tabs", make_icon(scroll_button_right_hl_png));
@@ -1032,9 +1036,16 @@ void make_default_theme(bool p_hidpi, Ref<Font> p_font) {
 	}
 
 	Ref<Font> large_font = default_font;
-	fill_default_theme(t, default_font, large_font, default_icon, default_style, p_hidpi ? 2.0 : 1.0);
+
+	float default_scale = 1.0;
+	if (p_hidpi) {
+		default_scale = 2.0;
+	}
+
+	fill_default_theme(t, default_font, large_font, default_icon, default_style, default_scale);
 
 	Theme::set_default(t);
+	Theme::set_default_base_scale(default_scale);
 	Theme::set_default_icon(default_icon);
 	Theme::set_default_style(default_style);
 	Theme::set_default_font(default_font);

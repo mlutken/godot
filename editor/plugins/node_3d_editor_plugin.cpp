@@ -128,7 +128,7 @@ void ViewportRotationControl::_draw_axis(const Axis2D &p_axis) {
 
 	const Color axis_color = axis_colors[direction];
 	const double alpha = focused ? 1.0 : ((p_axis.z_axis + 1.0) / 2.0) * 0.5 + 0.5;
-	const Color c = focused ? Color(0.9, 0.9, 0.9) : Color(axis_color.r, axis_color.g, axis_color.b, alpha);
+	const Color c = focused ? Color(0.9, 0.9, 0.9) : Color(axis_color, alpha);
 
 	if (positive) {
 		// Draw axis lines for the positive axes.
@@ -357,8 +357,8 @@ int Node3DEditorViewport::get_selected_count() const {
 
 	int count = 0;
 
-	for (Map<Node *, Object *>::Element *E = selection.front(); E; E = E->next()) {
-		Node3D *sp = Object::cast_to<Node3D>(E->key());
+	for (const KeyValue<Node *, Object *> &E : selection) {
+		Node3D *sp = Object::cast_to<Node3D>(E.key);
 		if (!sp) {
 			continue;
 		}
@@ -818,7 +818,7 @@ void Node3DEditorViewport::_update_name() {
 			if (orthogonal) {
 				name = TTR("Left Orthogonal");
 			} else {
-				name = TTR("Right Perspective");
+				name = TTR("Left Perspective");
 			}
 		} break;
 		case VIEW_TYPE_RIGHT: {
@@ -854,8 +854,8 @@ void Node3DEditorViewport::_update_name() {
 }
 
 void Node3DEditorViewport::_compute_edit(const Point2 &p_point) {
-	_edit.click_ray = _get_ray(Vector2(p_point.x, p_point.y));
-	_edit.click_ray_pos = _get_ray_pos(Vector2(p_point.x, p_point.y));
+	_edit.click_ray = _get_ray(p_point);
+	_edit.click_ray_pos = _get_ray_pos(p_point);
 	_edit.plane = TRANSFORM_VIEW;
 	spatial_editor->update_transform_gizmo();
 	_edit.center = spatial_editor->get_gizmo_transform().origin;
@@ -864,8 +864,8 @@ void Node3DEditorViewport::_compute_edit(const Point2 &p_point) {
 	Node3DEditorSelectedItem *se = selected ? editor_selection->get_node_editor_data<Node3DEditorSelectedItem>(selected) : nullptr;
 
 	if (se && se->gizmo.is_valid()) {
-		for (Map<int, Transform3D>::Element *E = se->subgizmos.front(); E; E = E->next()) {
-			int subgizmo_id = E->key();
+		for (const KeyValue<int, Transform3D> &E : se->subgizmos) {
+			int subgizmo_id = E.key;
 			se->subgizmos[subgizmo_id] = se->gizmo->get_subgizmo_transform(subgizmo_id);
 		}
 		se->original_local = selected->get_transform();
@@ -934,8 +934,8 @@ bool Node3DEditorViewport::_transform_gizmo_select(const Vector2 &p_screenpos, b
 		return false;
 	}
 
-	Vector3 ray_pos = _get_ray_pos(Vector2(p_screenpos.x, p_screenpos.y));
-	Vector3 ray = _get_ray(Vector2(p_screenpos.x, p_screenpos.y));
+	Vector3 ray_pos = _get_ray_pos(p_screenpos);
+	Vector3 ray = _get_ray(p_screenpos);
 
 	Transform3D gt = spatial_editor->get_gizmo_transform();
 
@@ -998,7 +998,7 @@ bool Node3DEditorViewport::_transform_gizmo_select(const Vector2 &p_screenpos, b
 			} else {
 				//handle plane translate
 				_edit.mode = TRANSFORM_TRANSLATE;
-				_compute_edit(Point2(p_screenpos.x, p_screenpos.y));
+				_compute_edit(p_screenpos);
 				_edit.plane = TransformPlane(TRANSFORM_X_AXIS + col_axis + (is_plane_translate ? 3 : 0));
 			}
 			return true;
@@ -1036,7 +1036,7 @@ bool Node3DEditorViewport::_transform_gizmo_select(const Vector2 &p_screenpos, b
 			} else {
 				//handle rotate
 				_edit.mode = TRANSFORM_ROTATE;
-				_compute_edit(Point2(p_screenpos.x, p_screenpos.y));
+				_compute_edit(p_screenpos);
 				_edit.plane = TransformPlane(TRANSFORM_X_AXIS + col_axis);
 			}
 			return true;
@@ -1102,7 +1102,7 @@ bool Node3DEditorViewport::_transform_gizmo_select(const Vector2 &p_screenpos, b
 			} else {
 				//handle scale
 				_edit.mode = TRANSFORM_SCALE;
-				_compute_edit(Point2(p_screenpos.x, p_screenpos.y));
+				_compute_edit(p_screenpos);
 				_edit.plane = TransformPlane(TRANSFORM_X_AXIS + col_axis + (is_plane_scale ? 3 : 0));
 			}
 			return true;
@@ -1374,9 +1374,9 @@ void Node3DEditorViewport::_sinput(const Ref<InputEvent> &p_event) {
 							Vector<int> ids;
 							Vector<Transform3D> restore;
 
-							for (Map<int, Transform3D>::Element *GE = se->subgizmos.front(); GE; GE = GE->next()) {
-								ids.push_back(GE->key());
-								restore.push_back(GE->value());
+							for (const KeyValue<int, Transform3D> &GE : se->subgizmos) {
+								ids.push_back(GE.key);
+								restore.push_back(GE.value);
 							}
 
 							se->gizmo->commit_subgizmos(ids, restore, true);
@@ -1612,9 +1612,9 @@ void Node3DEditorViewport::_sinput(const Ref<InputEvent> &p_event) {
 							Vector<int> ids;
 							Vector<Transform3D> restore;
 
-							for (Map<int, Transform3D>::Element *GE = se->subgizmos.front(); GE; GE = GE->next()) {
-								ids.push_back(GE->key());
-								restore.push_back(GE->value());
+							for (const KeyValue<int, Transform3D> &GE : se->subgizmos) {
+								ids.push_back(GE.key);
+								restore.push_back(GE.value);
 							}
 
 							se->gizmo->commit_subgizmos(ids, restore, false);
@@ -1845,13 +1845,13 @@ void Node3DEditorViewport::_sinput(const Ref<InputEvent> &p_event) {
 							}
 
 							if (se->gizmo.is_valid()) {
-								for (Map<int, Transform3D>::Element *GE = se->subgizmos.front(); GE; GE = GE->next()) {
-									Transform3D xform = GE->get();
+								for (KeyValue<int, Transform3D> &GE : se->subgizmos) {
+									Transform3D xform = GE.value;
 									Transform3D new_xform = _compute_transform(TRANSFORM_SCALE, se->original * xform, xform, motion, snap, local_coords);
 									if (!local_coords) {
 										new_xform = se->original.affine_inverse() * new_xform;
 									}
-									se->gizmo->set_subgizmo_transform(GE->key(), new_xform);
+									se->gizmo->set_subgizmo_transform(GE.key, new_xform);
 								}
 							} else {
 								Transform3D new_xform = _compute_transform(TRANSFORM_SCALE, se->original, se->original_local, motion, snap, local_coords);
@@ -1944,11 +1944,11 @@ void Node3DEditorViewport::_sinput(const Ref<InputEvent> &p_event) {
 							}
 
 							if (se->gizmo.is_valid()) {
-								for (Map<int, Transform3D>::Element *GE = se->subgizmos.front(); GE; GE = GE->next()) {
-									Transform3D xform = GE->get();
+								for (KeyValue<int, Transform3D> &GE : se->subgizmos) {
+									Transform3D xform = GE.value;
 									Transform3D new_xform = _compute_transform(TRANSFORM_TRANSLATE, se->original * xform, xform, motion, snap, local_coords);
 									new_xform = se->original.affine_inverse() * new_xform;
-									se->gizmo->set_subgizmo_transform(GE->key(), new_xform);
+									se->gizmo->set_subgizmo_transform(GE.key, new_xform);
 								}
 							} else {
 								Transform3D new_xform = _compute_transform(TRANSFORM_TRANSLATE, se->original, se->original_local, motion, snap, local_coords);
@@ -2030,14 +2030,14 @@ void Node3DEditorViewport::_sinput(const Ref<InputEvent> &p_event) {
 
 							Vector3 compute_axis = local_coords ? axis : plane.normal;
 							if (se->gizmo.is_valid()) {
-								for (Map<int, Transform3D>::Element *GE = se->subgizmos.front(); GE; GE = GE->next()) {
-									Transform3D xform = GE->get();
+								for (KeyValue<int, Transform3D> &GE : se->subgizmos) {
+									Transform3D xform = GE.value;
 
 									Transform3D new_xform = _compute_transform(TRANSFORM_ROTATE, se->original * xform, xform, compute_axis, angle, local_coords);
 									if (!local_coords) {
 										new_xform = se->original.affine_inverse() * new_xform;
 									}
-									se->gizmo->set_subgizmo_transform(GE->key(), new_xform);
+									se->gizmo->set_subgizmo_transform(GE.key, new_xform);
 								}
 							} else {
 								Transform3D new_xform = _compute_transform(TRANSFORM_ROTATE, se->original, se->original_local, compute_axis, angle, local_coords);
@@ -2483,8 +2483,14 @@ static bool is_shortcut_pressed(const String &p_path) {
 	if (shortcut.is_null()) {
 		return false;
 	}
-	InputEventKey *k = Object::cast_to<InputEventKey>(shortcut->get_event().ptr());
-	if (k == nullptr) {
+
+	const Array shortcuts = shortcut->get_events();
+	Ref<InputEventKey> k;
+	if (shortcuts.size() > 0) {
+		k = shortcuts.front();
+	}
+
+	if (k.is_null()) {
 		return false;
 	}
 	const Input &input = *Input::get_singleton();
@@ -2601,6 +2607,9 @@ void Node3DEditorViewport::_project_settings_changed() {
 
 	const bool use_occlusion_culling = GLOBAL_GET("rendering/occlusion_culling/use_occlusion_culling");
 	viewport->set_use_occlusion_culling(use_occlusion_culling);
+
+	const float lod_threshold = GLOBAL_GET("rendering/mesh_lod/lod_change/threshold_pixels");
+	viewport->set_lod_threshold(lod_threshold);
 }
 
 void Node3DEditorViewport::_notification(int p_what) {
@@ -2663,8 +2672,8 @@ void Node3DEditorViewport::_notification(int p_what) {
 		bool changed = false;
 		bool exist = false;
 
-		for (Map<Node *, Object *>::Element *E = selection.front(); E; E = E->next()) {
-			Node3D *sp = Object::cast_to<Node3D>(E->key());
+		for (const KeyValue<Node *, Object *> &E : selection) {
+			Node3D *sp = Object::cast_to<Node3D>(E.key);
 			if (!sp) {
 				continue;
 			}
@@ -3806,8 +3815,8 @@ void Node3DEditorViewport::focus_selection() {
 		}
 
 		if (se->gizmo.is_valid()) {
-			for (Map<int, Transform3D>::Element *GE = se->subgizmos.front(); GE; GE = GE->next()) {
-				center += se->gizmo->get_subgizmo_transform(GE->key()).origin;
+			for (const KeyValue<int, Transform3D> &GE : se->subgizmos) {
+				center += se->gizmo->get_subgizmo_transform(GE.key).origin;
 				count++;
 			}
 		}
@@ -3917,7 +3926,7 @@ void Node3DEditorViewport::_remove_preview() {
 }
 
 bool Node3DEditorViewport::_cyclical_dependency_exists(const String &p_target_scene_path, Node *p_desired_node) {
-	if (p_desired_node->get_filename() == p_target_scene_path) {
+	if (p_desired_node->get_scene_file_path() == p_target_scene_path) {
 		return true;
 	}
 
@@ -3959,15 +3968,15 @@ bool Node3DEditorViewport::_create_instance(Node *parent, String &path, const Po
 		return false;
 	}
 
-	if (editor->get_edited_scene()->get_filename() != "") { // cyclical instancing
-		if (_cyclical_dependency_exists(editor->get_edited_scene()->get_filename(), instantiated_scene)) {
+	if (editor->get_edited_scene()->get_scene_file_path() != "") { // cyclical instancing
+		if (_cyclical_dependency_exists(editor->get_edited_scene()->get_scene_file_path(), instantiated_scene)) {
 			memdelete(instantiated_scene);
 			return false;
 		}
 	}
 
 	if (scene != nullptr) {
-		instantiated_scene->set_filename(ProjectSettings::get_singleton()->localize_path(path));
+		instantiated_scene->set_scene_file_path(ProjectSettings::get_singleton()->localize_path(path));
 	}
 
 	editor_data->get_undo_redo().add_do_method(parent, "add_child", instantiated_scene);
@@ -4747,8 +4756,8 @@ void Node3DEditor::update_transform_gizmo() {
 	Node3DEditorSelectedItem *se = selected ? editor_selection->get_node_editor_data<Node3DEditorSelectedItem>(selected) : nullptr;
 
 	if (se && se->gizmo.is_valid()) {
-		for (Map<int, Transform3D>::Element *E = se->subgizmos.front(); E; E = E->next()) {
-			Transform3D xf = se->sp->get_global_transform() * se->gizmo->get_subgizmo_transform(E->key());
+		for (const KeyValue<int, Transform3D> &E : se->subgizmos) {
+			Transform3D xf = se->sp->get_global_transform() * se->gizmo->get_subgizmo_transform(E.key);
 			gizmo_center += xf.origin;
 			if (count == 0 && local_gizmo_coords) {
 				gizmo_basis = xf.basis;
@@ -6014,7 +6023,7 @@ void fragment() {
 void Node3DEditor::_update_context_menu_stylebox() {
 	// This must be called when the theme changes to follow the new accent color.
 	Ref<StyleBoxFlat> context_menu_stylebox = memnew(StyleBoxFlat);
-	const Color accent_color = EditorNode::get_singleton()->get_gui_base()->get_theme_color("accent_color", "Editor");
+	const Color accent_color = EditorNode::get_singleton()->get_gui_base()->get_theme_color(SNAME("accent_color"), SNAME("Editor"));
 	context_menu_stylebox->set_bg_color(accent_color * Color(1, 1, 1, 0.1));
 	// Add an underline to the StyleBox, but prevent its minimum vertical size from changing.
 	context_menu_stylebox->set_border_color(accent_color);
@@ -6280,7 +6289,7 @@ void Node3DEditor::update_grid() {
 	// Gets a orthogonal or perspective position correctly (for the grid comparison)
 	const Vector3 camera_position = get_editor_viewport(0)->camera->get_position();
 
-	if (!grid_init_draw || (camera_position - grid_camera_last_update_position).length() >= 10.0f) {
+	if (!grid_init_draw || grid_camera_last_update_position.distance_squared_to(camera_position) >= 100.0f) {
 		_finish_grid();
 		_init_grid();
 		grid_init_draw = true;
@@ -6674,8 +6683,8 @@ Vector<int> Node3DEditor::get_subgizmo_selection() {
 
 	Vector<int> ret;
 	if (se) {
-		for (Map<int, Transform3D>::Element *E = se->subgizmos.front(); E; E = E->next()) {
-			ret.push_back(E->key());
+		for (const KeyValue<int, Transform3D> &E : se->subgizmos) {
+			ret.push_back(E.key);
 		}
 	}
 	return ret;

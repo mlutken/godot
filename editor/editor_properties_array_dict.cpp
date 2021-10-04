@@ -176,7 +176,7 @@ void EditorPropertyArray::_change_type(Object *p_button, int p_index) {
 	changing_type_index = p_index;
 	Rect2 rect = button->get_screen_rect();
 	change_type->set_as_minsize();
-	change_type->set_position(rect.position + rect.size - Vector2(change_type->get_contents_minimum_size().x, 0));
+	change_type->set_position(rect.get_end() - Vector2(change_type->get_contents_minimum_size().x, 0));
 	change_type->popup();
 }
 
@@ -428,6 +428,12 @@ void EditorPropertyArray::_button_draw() {
 
 bool EditorPropertyArray::_is_drop_valid(const Dictionary &p_drag_data) const {
 	String allowed_type = Variant::get_type_name(subtype);
+
+	// When the subtype is of type Object, an additional subtype may be specified in the hint string
+	// (e.g. Resource, Texture2D, ShaderMaterial, etc). We want the allowed type to be that, not just "Object".
+	if (subtype == Variant::OBJECT && subtype_hint_string != "") {
+		allowed_type = subtype_hint_string;
+	}
 
 	Dictionary drag_data = p_drag_data;
 
@@ -726,7 +732,7 @@ void EditorPropertyDictionary::_change_type(Object *p_button, int p_index) {
 
 	Rect2 rect = button->get_screen_rect();
 	change_type->set_as_minsize();
-	change_type->set_position(rect.position + rect.size - Vector2(change_type->get_contents_minimum_size().x, 0));
+	change_type->set_position(rect.get_end() - Vector2(change_type->get_contents_minimum_size().x, 0));
 	change_type->popup();
 	changing_type_index = p_index;
 }

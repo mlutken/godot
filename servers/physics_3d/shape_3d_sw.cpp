@@ -61,8 +61,8 @@ subject to the following restrictions:
 void Shape3DSW::configure(const AABB &p_aabb) {
 	aabb = p_aabb;
 	configured = true;
-	for (Map<ShapeOwner3DSW *, int>::Element *E = owners.front(); E; E = E->next()) {
-		ShapeOwner3DSW *co = (ShapeOwner3DSW *)E->key();
+	for (const KeyValue<ShapeOwner3DSW *, int> &E : owners) {
+		ShapeOwner3DSW *co = (ShapeOwner3DSW *)E.key;
 		co->_shape_changed();
 	}
 }
@@ -1576,7 +1576,7 @@ void ConcavePolygonShape3DSW::_setup(const Vector<Vector3> &p_faces, bool p_back
 		Face3 face(facesr[i * 3 + 0], facesr[i * 3 + 1], facesr[i * 3 + 2]);
 
 		bvh_arrayw[i].aabb = face.get_aabb();
-		bvh_arrayw[i].center = bvh_arrayw[i].aabb.position + bvh_arrayw[i].aabb.size * 0.5;
+		bvh_arrayw[i].center = bvh_arrayw[i].aabb.get_center();
 		bvh_arrayw[i].face_index = i;
 		facesw[i].indices[0] = i * 3 + 0;
 		facesw[i].indices[1] = i * 3 + 1;

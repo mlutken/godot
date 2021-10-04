@@ -227,17 +227,17 @@ void CodeEdit::_notification(int p_what) {
 						end = font->get_string_size(line.substr(0, line.rfind(String::chr(0xFFFF))), font_size).x;
 					}
 
-					Point2 round_ofs = hint_ofs + sb->get_offset() + Vector2(0, font->get_ascent() + font_height * i + yofs);
+					Point2 round_ofs = hint_ofs + sb->get_offset() + Vector2(0, font->get_ascent(font_size) + font_height * i + yofs);
 					round_ofs = round_ofs.round();
 					draw_string(font, round_ofs, line.replace(String::chr(0xFFFF), ""), HALIGN_LEFT, -1, font_size, font_color);
 					if (end > 0) {
 						// Draw an underline for the currently edited function parameter.
-						const Vector2 b = hint_ofs + sb->get_offset() + Vector2(begin, font_height + font_height * i + line_spacing);
+						const Vector2 b = hint_ofs + sb->get_offset() + Vector2(begin, font_height + font_height * i + yofs);
 						draw_line(b, b + Vector2(end - begin, 0), font_color, 2);
 
 						// Draw a translucent text highlight as well.
 						const Rect2 highlight_rect = Rect2(
-								hint_ofs + sb->get_offset() + Vector2(begin, 0),
+								b - Vector2(0, font_height),
 								Vector2(end - begin, font_height));
 						draw_rect(highlight_rect, font_color * Color(1, 1, 1, 0.2));
 					}
@@ -296,7 +296,7 @@ void CodeEdit::gui_input(const Ref<InputEvent> &p_gui_input) {
 				mpos.x = get_size().x - mpos.x;
 			}
 
-			Point2i pos = get_line_column_at_pos(Point2i(mpos.x, mpos.y));
+			Point2i pos = get_line_column_at_pos(mpos);
 			int line = pos.y;
 			int col = pos.x;
 
@@ -321,7 +321,7 @@ void CodeEdit::gui_input(const Ref<InputEvent> &p_gui_input) {
 						mpos.x = get_size().x - mpos.x;
 					}
 
-					Point2i pos = get_line_column_at_pos(Point2i(mpos.x, mpos.y));
+					Point2i pos = get_line_column_at_pos(mpos);
 					int line = pos.y;
 					int col = pos.x;
 
@@ -614,15 +614,15 @@ void CodeEdit::_backspace_internal() {
 		return;
 	}
 
+	if (has_selection()) {
+		delete_selection();
+		return;
+	}
+
 	int cc = get_caret_column();
 	int cl = get_caret_line();
 
 	if (cc == 0 && cl == 0) {
-		return;
-	}
-
-	if (has_selection()) {
-		delete_selection();
 		return;
 	}
 
@@ -1146,13 +1146,20 @@ bool CodeEdit::is_drawing_executing_lines_gutter() const {
 }
 
 void CodeEdit::_main_gutter_draw_callback(int p_line, int p_gutter, const Rect2 &p_region) {
-	if (draw_breakpoints && is_line_breakpointed(p_line)) {
-		int padding = p_region.size.x / 6;
+	if (draw_breakpoints) {
+		bool hovering = p_region.has_point(get_local_mouse_pos());
+		bool breakpointed = is_line_breakpointed(p_line);
 
-		Rect2 breakpoint_region = p_region;
-		breakpoint_region.position += Point2(padding, padding);
-		breakpoint_region.size -= Point2(padding, padding) * 2;
-		breakpoint_icon->draw_rect(get_canvas_item(), breakpoint_region, false, breakpoint_color);
+		if (breakpointed || (hovering && !is_dragging_cursor())) {
+			int padding = p_region.size.x / 6;
+			Rect2 icon_region = p_region;
+			icon_region.position += Point2(padding, padding);
+			icon_region.size -= Point2(padding, padding) * 2;
+
+			// Darken icon when hovering & not yet breakpointed.
+			Color use_color = hovering && !breakpointed ? breakpoint_color.darkened(0.4) : breakpoint_color;
+			breakpoint_icon->draw_rect(get_canvas_item(), icon_region, false, use_color);
+		}
 	}
 
 	if (draw_bookmarks && is_line_bookmarked(p_line)) {
@@ -1613,12 +1620,12 @@ Point2 CodeEdit::get_delimiter_start_position(int p_line, int p_column) const {
 	bool in_region = ((p_line <= 0 || delimiter_cache[p_line - 1].size() < 1) ? -1 : delimiter_cache[p_line - 1].back()->value()) != -1;
 
 	/* Check the keys for this line. */
-	for (Map<int, int>::Element *E = delimiter_cache[p_line].front(); E; E = E->next()) {
-		if (E->key() > p_column) {
+	for (const KeyValue<int, int> &E : delimiter_cache[p_line]) {
+		if (E.key > p_column) {
 			break;
 		}
-		in_region = E->value() != -1;
-		start_position.x = in_region ? E->key() : -1;
+		in_region = E.value != -1;
+		start_position.x = in_region ? E.key : -1;
 	}
 
 	/* Region was found on this line and is not a multiline continuation. */
@@ -1664,12 +1671,12 @@ Point2 CodeEdit::get_delimiter_end_position(int p_line, int p_column) const {
 	int region = (p_line <= 0 || delimiter_cache[p_line - 1].size() < 1) ? -1 : delimiter_cache[p_line - 1].back()->value();
 
 	/* Check the keys for this line. */
-	for (Map<int, int>::Element *E = delimiter_cache[p_line].front(); E; E = E->next()) {
-		end_position.x = (E->value() == -1) ? E->key() : -1;
-		if (E->key() > p_column) {
+	for (const KeyValue<int, int> &E : delimiter_cache[p_line]) {
+		end_position.x = (E.value == -1) ? E.key : -1;
+		if (E.key > p_column) {
 			break;
 		}
-		region = E->value();
+		region = E.value;
 	}
 
 	/* Region was found on this line and is not a multiline continuation. */

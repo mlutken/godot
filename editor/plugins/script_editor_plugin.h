@@ -366,6 +366,7 @@ class ScriptEditor : public PanelContainer {
 	void _add_callback(Object *p_obj, const String &p_function, const PackedStringArray &p_args);
 	void _res_saved_callback(const Ref<Resource> &p_res);
 
+	bool open_textfile_after_create = true;
 	bool trim_trailing_whitespace_on_save;
 	bool use_space_indentation;
 	bool convert_indent_on_save;
@@ -418,6 +419,7 @@ class ScriptEditor : public PanelContainer {
 	bool can_drop_data_fw(const Point2 &p_point, const Variant &p_data, Control *p_from) const;
 	void drop_data_fw(const Point2 &p_point, const Variant &p_data, Control *p_from);
 
+	virtual void input(const Ref<InputEvent> &p_event) override;
 	virtual void unhandled_key_input(const Ref<InputEvent> &p_event) override;
 
 	void _script_list_gui_input(const Ref<InputEvent> &ev);
@@ -471,6 +473,8 @@ public:
 	bool is_scripts_panel_toggled();
 	void apply_scripts() const;
 	void open_script_create_dialog(const String &p_base_name, const String &p_base_path);
+	void open_text_file_create_dialog(const String &p_base_path, const String &p_base_name = "");
+	RES open_file(const String &p_file);
 
 	void ensure_select_current();
 

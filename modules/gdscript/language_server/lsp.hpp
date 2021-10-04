@@ -263,19 +263,29 @@ struct WorkspaceEdit {
 	 */
 	Map<String, Vector<TextEdit>> changes;
 
+	_FORCE_INLINE_ void add_edit(const String &uri, const TextEdit &edit) {
+		if (changes.has(uri)) {
+			changes[uri].push_back(edit);
+		} else {
+			Vector<TextEdit> edits;
+			edits.push_back(edit);
+			changes[uri] = edits;
+		}
+	}
+
 	_FORCE_INLINE_ Dictionary to_json() const {
 		Dictionary dict;
 
 		Dictionary out_changes;
-		for (Map<String, Vector<TextEdit>>::Element *E = changes.front(); E; E = E->next()) {
+		for (const KeyValue<String, Vector<TextEdit>> &E : changes) {
 			Array edits;
-			for (int i = 0; i < E->get().size(); ++i) {
+			for (int i = 0; i < E.value.size(); ++i) {
 				Dictionary text_edit;
-				text_edit["range"] = E->get()[i].range.to_json();
-				text_edit["newText"] = E->get()[i].newText;
+				text_edit["range"] = E.value[i].range.to_json();
+				text_edit["newText"] = E.value[i].newText;
 				edits.push_back(text_edit);
 			}
-			out_changes[E->key()] = edits;
+			out_changes[E.key] = edits;
 		}
 		dict["changes"] = out_changes;
 
@@ -1319,6 +1329,18 @@ struct DocumentSymbol {
 		}
 
 		return item;
+	}
+};
+
+struct ApplyWorkspaceEditParams {
+	WorkspaceEdit edit;
+
+	Dictionary to_json() {
+		Dictionary dict;
+
+		dict["edit"] = edit.to_json();
+
+		return dict;
 	}
 };
 
