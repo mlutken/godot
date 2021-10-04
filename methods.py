@@ -488,16 +488,19 @@ def no_verbose(sys, env):
         colors["red"], colors["purple"], colors["yellow"], colors["end"]
     )
 
-    env.Append(CXXCOMSTR=[compile_source_message])
-    env.Append(CCCOMSTR=[compile_source_message])
-    env.Append(SHCCCOMSTR=[compile_shared_source_message])
-    env.Append(SHCXXCOMSTR=[compile_shared_source_message])
-    env.Append(ARCOMSTR=[link_library_message])
-    env.Append(RANLIBCOMSTR=[ranlib_library_message])
-    env.Append(SHLINKCOMSTR=[link_shared_library_message])
-    env.Append(LINKCOMSTR=[link_program_message])
-    env.Append(JARCOMSTR=[java_library_message])
-    env.Append(JAVACCOMSTR=[java_compile_source_message])
+    # ------------------------------------------------------------------------------
+    # --- Uncomment the following env.Append lines to see full compiler commands ---
+    # ------------------------------------------------------------------------------
+    #env.Append(CXXCOMSTR=[compile_source_message])
+    #env.Append(CCCOMSTR=[compile_source_message])
+    #env.Append(SHCCCOMSTR=[compile_shared_source_message])
+    #env.Append(SHCXXCOMSTR=[compile_shared_source_message])
+    #env.Append(ARCOMSTR=[link_library_message])
+    #env.Append(RANLIBCOMSTR=[ranlib_library_message])
+    #env.Append(SHLINKCOMSTR=[link_shared_library_message])
+    #env.Append(LINKCOMSTR=[link_program_message])
+    #env.Append(JARCOMSTR=[java_library_message])
+    #env.Append(JAVACCOMSTR=[java_compile_source_message])
 
 
 def detect_visual_c_compiler_version(tools_env):

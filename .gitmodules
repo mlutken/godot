@@ -1,0 +1,3 @@
+[submodule "modules/ffmpeg"]
+	path = modules/ffmpeg
+	url = git@github.com:mlutken/godot-ffmpeg.git
