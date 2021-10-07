@@ -36,6 +36,22 @@
 #include "main/main.h"
 #include "os_linuxbsd.h"
 
+#define ML_TEST 1
+
+#if (ML_TEST == 2)
+#include "../../../modules/avcpp/example/api2-samples/api2-timestamp.cpp"
+#elif (ML_TEST == 1)
+#include <iostream>
+#include <modules/ffmpeg/libavutil/rational.h>
+int main(int argc, char *argv[]) {
+	std::cerr << "Hello Martin\n";
+	std::cerr << "fixme_mult(7, 5):" << fixme_mult(7, 5) << "\n";
+
+
+	return 0;
+}
+
+#else
 int main(int argc, char *argv[]) {
 	OS_LinuxBSD os;
 
@@ -68,3 +84,4 @@ int main(int argc, char *argv[]) {
 
 	return os.get_exit_code();
 }
+#endif
