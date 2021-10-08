@@ -42,10 +42,15 @@
 #include "../../../modules/avcpp/example/api2-samples/api2-timestamp.cpp"
 #elif (ML_TEST == 1)
 #include <iostream>
-#include <modules/ffmpeg/libavutil/rational.h>
+extern "C" {
+#include <libavutil/rational.h>
+}
 int main(int argc, char *argv[]) {
 	std::cerr << "Hello Martin\n";
-	std::cerr << "fixme_mult(7, 5):" << fixme_mult(7, 5) << "\n";
+	std::cerr << "fixme_mult(7, 5): " << fixme_mult(7, 5) << "\n";
+	auto rat =     av_d2q(3, 6);
+
+	std::cerr << "rat:  " << rat.num << " / " << rat.den << "\n";
 
 
 	return 0;

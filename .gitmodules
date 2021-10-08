@@ -1,6 +1,3 @@
-[submodule "modules/ffmpeg"]
-	path = modules/ffmpeg
-	url = git@github.com:mlutken/godot-ffmpeg.git
 [submodule "modules/avcpp"]
 	path = modules/avcpp
 	url = git@github.com:mlutken/avcpp.git
