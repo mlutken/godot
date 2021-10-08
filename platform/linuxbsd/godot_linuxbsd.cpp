@@ -36,10 +36,29 @@
 #include "main/main.h"
 #include "os_linuxbsd.h"
 
-#define ML_TEST 1
+#define ML_TEST 2
 
-#if (ML_TEST == 2)
+#if (ML_TEST == 3)
 #include "../../../modules/avcpp/example/api2-samples/api2-timestamp.cpp"
+#elif (ML_TEST == 2)
+#include <av_rational.h>
+int main(int argc, char *argv[]) {
+	std::cerr << "Hello Rational\n";
+//	auto rat =     av_d2q(3, 6);
+//	std::cerr << "rat:  " << rat.num << " / " << rat.den << "\n";
+
+	av::Rational r (3,6);
+	r.dump();
+	std::cout << std::endl;
+
+//	std::cerr << "fixme_mult(7, 5): " << fixme_mult(7, 5) << "\n";
+//	auto rat =     av_d2q(3, 6);
+
+//	std::cerr << "rat:  " << rat.num << " / " << rat.den << "\n";
+
+
+	return 0;
+}
 #elif (ML_TEST == 1)
 #include <iostream>
 extern "C" {

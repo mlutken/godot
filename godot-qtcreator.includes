@@ -76,6 +76,7 @@ modules/hdr
 modules/jpg
 modules/jsonrpc
 modules/lightmapper_rd
+modules/libffmpeg
 modules/mbedtls
 modules/mbedtls/tests
 modules/meshoptimizer
