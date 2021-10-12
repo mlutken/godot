@@ -426,6 +426,11 @@ if selected_platform in platform_list:
         # We apply it to CCFLAGS (both C and C++ code) in case it impacts C features.
         env.Prepend(CCFLAGS=["/std:c++17"])
 
+
+    if env["platform"] == "linuxbsd":
+        # --- FIXME: Hmm, where to really add these flags
+        env.Prepend(CCFLAGS=["-fPIC", "-fPIE"])
+
     # Enforce our minimal compiler version requirements
     cc_version = methods.get_compiler_version(env) or {
         "major": None,

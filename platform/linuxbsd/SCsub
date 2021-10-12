@@ -31,5 +31,6 @@ prog = env.add_program("#bin/godot", ["godot_linuxbsd.cpp"] + common_linuxbsd)
 if env["debug_symbols"] and env["separate_debug_symbols"]:
     env.AddPostAction(prog, run_in_subprocess(platform_linuxbsd_builders.make_debug_linuxbsd))
 
-# --- FIXMENM: Only for ML local test programs (ffmpeg/avcpp) ---
-env.Prepend(CPPPATH=["#modules/avcpp/src"])
+
+# --- FIXMENM: Only for ML local test programs (ffmpeg/wrapffmpeg) ---
+env.Prepend(CPPPATH=["#modules/wrapffmpeg/src"])

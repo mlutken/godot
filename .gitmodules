@@ -1,3 +1,6 @@
 [submodule "modules/libffmpeg"]
 	path = modules/libffmpeg
 	url = git@github.com:mlutken/godot-libffmpeg.git
+[submodule "modules/wrapffmpeg"]
+	path = modules/wrapffmpeg
+	url = git@github.com:mlutken/godot-wrapffmpeg.git

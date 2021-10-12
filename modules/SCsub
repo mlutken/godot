@@ -61,3 +61,4 @@ lib = env_modules.add_library("modules", env.modules_sources)
 env.Prepend(LIBS=[lib])
 if env["vsproj"]:
     env.modules_sources += vs_sources
+
