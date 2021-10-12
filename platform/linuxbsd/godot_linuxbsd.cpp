@@ -37,14 +37,18 @@
 #include "os_linuxbsd.h"
 
 #define ML_TEST 4
-#include <libavcodec/avcodec.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/avstring.h>
-#include <libavutil/time.h>
-#include <libavutil/opt.h>
-#include <libavformat/avformat.h>
-#include <libswscale/swscale.h>
-#include <libswresample/swresample.h>
+extern "C"
+{
+	#include <libavcodec/avcodec.h>
+	#include <libavutil/imgutils.h>
+	#include <libavutil/avstring.h>
+	#include <libavutil/time.h>
+	#include <libavutil/opt.h>
+	#include <libavformat/avformat.h>
+	#include <libswscale/swscale.h>
+	#include <libswresample/swresample.h>
+}
+
 #include <av_rational.h>
 
 #define SDL_AUDIO_BUFFER_SIZE 1024

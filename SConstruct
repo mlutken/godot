@@ -429,7 +429,13 @@ if selected_platform in platform_list:
 
     if env["platform"] == "linuxbsd":
         # --- FIXME: Hmm, where to really add these flags
-        env.Prepend(CCFLAGS=["-fPIC", "-fPIE"])
+#        env.Prepend(CCFLAGS=["-fPIC", "-fPIE"])
+        env.Prepend(CCFLAGS=["-fPIE"])
+
+# ------- FIXMEN ffmpeg testing ---
+    env.Append(CPPDEFINES=["ARCH_X86"])
+    env.Append(CPPDEFINES=["HAVE_BIGENDIAN=0"])
+# -----------------------------------------
 
     # Enforce our minimal compiler version requirements
     cc_version = methods.get_compiler_version(env) or {
