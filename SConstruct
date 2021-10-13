@@ -430,7 +430,8 @@ if selected_platform in platform_list:
     if env["platform"] == "linuxbsd":
         # --- FIXME: Hmm, where to really add these flags
 #        env.Prepend(CCFLAGS=["-fPIC", "-fPIE"])
-        env.Prepend(CCFLAGS=["-fPIE"])
+        env.Prepend(CCFLAGS=["-fPIC"])
+#        env.Prepend(CCFLAGS=["-fPIE"])
 
 # ------- FIXMEN ffmpeg testing ---
     env.Append(CPPDEFINES=["ARCH_X86"])
