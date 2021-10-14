@@ -426,17 +426,36 @@ if selected_platform in platform_list:
         # We apply it to CCFLAGS (both C and C++ code) in case it impacts C features.
         env.Prepend(CCFLAGS=["/std:c++17"])
 
+## ------- TODO: FIXME ffmpeg linker libs. Where to put these? Most likely in module/ffmpeg! ---
 
-    if env["platform"] == "linuxbsd":
-        # --- FIXME: Hmm, where to really add these flags
-#        env.Prepend(CCFLAGS=["-fPIC", "-fPIE"])
-        env.Prepend(CCFLAGS=["-fPIC"])
-#        env.Prepend(CCFLAGS=["-fPIE"])
+    if env["platform"] == "windows":
+#        env_ffmpeg.Append(CPPPATH=["#thirdparty/ffmpeglibs/lib/win/release/x86_64/include"])
+        env.Append(CPPPATH=["#thirdparty/ffmpeglibs/lib/win/release/x86_64/include"])
+        env.Append(CPPPATH=[os.path.realpath(os.curdir) + "#thirdparty/ffmpeglibs/lib/win/release/x86_64/include"])
+        env.Append(LIBPATH=[os.path.realpath(os.curdir) + "#thirdparty/ffmpeglibs/lib/win/release/x86_64/lib"])
+        LIBS = env.get("LIBS", "")
+        env.Append(LIBS=["avformat", "avcodec", "avutil", "avfilter", "postproc", "swresample", "swscale", "user32", "bcrypt", "mfplat", "mfuuid", "ole32", "strmiids", "psapi", "strmiids", "uuid", "oleaut32", "shlwapi", "gdi32", "vfw32", "secur32", "ws2_32" ])
 
-# ------- FIXMEN ffmpeg testing ---
-    env.Append(CPPDEFINES=["ARCH_X86"])
-    env.Append(CPPDEFINES=["HAVE_BIGENDIAN=0"])
-# -----------------------------------------
+    elif env["platform"] == "linuxbsd":
+#        env_ffmpeg.Append(CPPPATH=["#thirdparty/ffmpeglibs/lib/linux/release/x86_64/include"])
+        env.Append(CPPPATH=["#thirdparty/ffmpeglibs/lib/linux/release/x86_64/include"])
+        env.Append(CPPPATH=[os.path.realpath(os.curdir) + "#thirdparty/ffmpeglibs/lib/linux/release/x86_64/include"])
+        env.Append(LIBPATH=[os.path.realpath(os.curdir) + "#thirdparty/ffmpeglibs/lib/linux/release/x86_64/lib"])
+        LIBS = env.get("LIBS", "")
+    #    env.Append(LIBS=["avformat", "avcodec", "avutil", "avfilter", "swresample", "swscale", "OpenCL", "vdpau"]) # NVidia graphics !?
+        env.Append(LIBS=["avformat", "avcodec", "avutil", "avfilter", "swresample", "swscale", "OpenCL", "bz2", "va", "va-drm", "va-x11", "lzma"])
+
+## TODO: Out
+##    if env["platform"] == "linuxbsd":
+##        # --- FIXME: Hmm, where to really add these flags
+###        env.Prepend(CCFLAGS=["-fPIC", "-fPIE"])
+##        env.Prepend(CCFLAGS=["-fPIC"])
+###        env.Prepend(CCFLAGS=["-fPIE"])
+##
+### ------- FIXMENM ffmpeg testing ---
+##    env.Append(CPPDEFINES=["ARCH_X86"])
+##    env.Append(CPPDEFINES=["HAVE_BIGENDIAN=0"])
+### -----------------------------------------
 
     # Enforce our minimal compiler version requirements
     cc_version = methods.get_compiler_version(env) or {

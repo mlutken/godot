@@ -36,7 +36,9 @@
 #include "main/main.h"
 #include "os_linuxbsd.h"
 
-#define ML_TEST 4
+#define ML_TEST 0
+
+
 extern "C"
 {
 	#include <libavcodec/avcodec.h>
@@ -48,6 +50,8 @@ extern "C"
 	#include <libswscale/swscale.h>
 	#include <libswresample/swresample.h>
 }
+
+#if (ML_TEST == 4)
 
 #include <av_rational.h>
 
@@ -94,7 +98,6 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-#if (ML_TEST == 4)
 #elif (ML_TEST == 3)
 #include "../../../modules/wrapffmpeg/example/api2-samples/api2-dict-basic.cpp"
 //#include "../../../modules/wrapffmpeg/example/api2-samples/api2-decode-audio.cpp"
