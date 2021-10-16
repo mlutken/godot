@@ -4,3 +4,6 @@
 [submodule "thirdparty/ffmpeglibs"]
 	path = thirdparty/ffmpeglibs
 	url = git@github.com:mlutken/godot-ffmpeglibs.git
+[submodule "modules/ffmpeg"]
+	path = modules/ffmpeg
+	url = git@github.com:mlutken/godot-ffmpeg.git

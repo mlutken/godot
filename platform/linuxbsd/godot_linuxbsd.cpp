@@ -36,7 +36,7 @@
 #include "main/main.h"
 #include "os_linuxbsd.h"
 
-#define ML_TEST 0
+#define ML_TEST 4
 
 
 extern "C"
